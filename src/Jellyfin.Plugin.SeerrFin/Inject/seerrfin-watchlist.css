@@ -77,18 +77,35 @@
 .bst-popout-wrapper:has(.bst-btn-watchlist) .bst-actions-left { flex-wrap: wrap; }
 
 .bst-popout-wrapper .bst-btn-watchlist {
-    min-height: 3rem;
-    padding: .5rem 1rem;
-    border: 1px solid #555;
-    border-radius: .5rem;
-    background: #202225;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    box-sizing: border-box;
+    border: 1px solid #373737;
+    border-radius: 50%;
+    font-size: 0.875rem;
+    font-weight: 400;
     color: #fff;
-    font: inherit;
-    font-size: .875rem;
+    background: #1d1d1d;
     cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease, opacity 0.1s ease;
+    flex: none;
 }
 
-.bst-popout-wrapper .bst-btn-watchlist[aria-pressed="true"] { border-color: var(--accent, #00a4dc); }
+.bst-popout-wrapper .bst-btn-watchlist:hover { background: #373737; }
+
+.bst-popout-wrapper .bst-btn-watchlist[aria-pressed="true"] {
+    border-color: #005499;
+    background: #005499;
+}
+
+.bst-popout-wrapper .bst-btn-watchlist[aria-pressed="true"]:hover {
+    border-color: #0077da;
+    background: #0077da;
+}
 
 .bst-popout-wrapper .bst-btn-watchlist:disabled { opacity: .6; cursor: default; }
 

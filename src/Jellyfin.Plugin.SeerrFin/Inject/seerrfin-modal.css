@@ -314,7 +314,7 @@
     color: #fff;
     background: #005499;
     cursor: pointer;
-    transition: background-color 0.1s ease, opacity 0.1s ease;
+    transition: background-color 0.1s ease, color 0.15s ease, opacity 0.1s ease;
     flex: 1;
 }
 
@@ -329,7 +329,7 @@
 
 .bst-btn-play:hover,
 .bst-btn-request:hover {
-    background: #008bff;
+    background: #0077da;
 }
 
 .bst-btn-play:active,
@@ -345,12 +345,12 @@
     justify-content: center;
     min-height: 3rem;
     padding: 0.5rem 1.25rem;
-    border: none;
+    border: 1px solid #373737;
     border-radius: 0.5rem;
     font-size: 0.875rem;
     font-weight: 400;
-    color: #5f6060;
-    background: #0c0d0d;
+    color: #fff;
+    background: #1d1d1d;
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease, opacity 0.1s ease;
     flex: 1;
@@ -360,32 +360,29 @@
     .bst-btn-request-4k { flex: initial; }
 }
 
-.bst-btn-request-4k:hover { background: #161818; color: #787a7a; }
-
 .bst-btn-request-4k:disabled { opacity: 0.6; cursor: not-allowed; }
+.bst-btn-request-4k:hover { background: #373737; }
 
 .bst-btn-trailer {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 3rem;
-    padding: 0.5rem 1.25rem;
-    border: none;
-    border-radius: 0.5rem;
+    width: 3rem;
+    height: 3rem;
+    padding: 0;
+    box-sizing: border-box;
+    border: 1px solid #373737;
+    border-radius: 50%;
     font-size: 0.875rem;
     font-weight: 400;
-    color: #5f6060;
-    background: #0c0d0d;
+    color: #fff;
+    background: #1d1d1d;
     cursor: pointer;
     transition: background-color 0.15s ease, color 0.15s ease, opacity 0.1s ease;
-    flex: 1;
+    flex: none;
 }
 
-@media (min-width: 640px) {
-    .bst-btn-trailer { flex: initial; }
-}
-
-.bst-btn-trailer:hover { background: #161818; color: #787a7a; }
+.bst-btn-trailer:hover { background: #373737; }
 
 .bst-details-layout {
     display: flex;

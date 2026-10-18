@@ -1221,9 +1221,9 @@ window.seerrFinLog = window.seerrFinLog || {
                                                 ${getRequestModalAdvanced().showRequest4kButton !== false && !hideRequest4k
                                                     ? `<button type="button" class="bst-btn-request-4k" data-action="request-4k"${request4kState.requested ? ' disabled' : ''}>${escapeHtml(request4kState.label)}</button>`
                                                     : ''}
-                                                <button type="button" class="bst-btn-watchlist" data-action="watchlist" aria-pressed="false" disabled>Loading watchlist…</button>
+                                                <button type="button" class="bst-btn-watchlist" data-action="watchlist" aria-pressed="false" aria-label="Loading watchlist…" title="Loading watchlist…" disabled><span class="material-icons" aria-hidden="true">add</span></button>
                                                 ${trailerKey
-                                                    ? `<button type="button" class="bst-btn-trailer" data-action="trailer" data-trailer-key="${escapeHtml(trailerKey)}">Trailer</button>`
+                                                    ? `<button type="button" class="bst-btn-trailer" data-action="trailer" data-trailer-key="${escapeHtml(trailerKey)}" aria-label="Trailer" title="Trailer"><span class="material-icons" aria-hidden="true">movie</span></button>`
                                                     : ''}
                                             </div>
                                         </div>
@@ -1298,20 +1298,24 @@ window.seerrFinLog = window.seerrFinLog || {
             watchlisted = result.watchlisted === true;
             watchlistLoaded = true;
             watchlistBtn.setAttribute('aria-pressed', String(watchlisted));
-            watchlistBtn.textContent = watchlisted ? 'Remove from watchlist' : 'Add to watchlist';
+            watchlistBtn.querySelector('.material-icons').textContent = watchlisted ? 'check' : 'add';
+            watchlistBtn.setAttribute('aria-label', watchlisted ? 'Remove from watchlist' : 'Add to watchlist');
+            watchlistBtn.title = watchlistBtn.getAttribute('aria-label');
             watchlistBtn.disabled = false;
         }
 
         function loadWatchlistButton() {
             if (!window.seerrFinWatchlist) {
-                watchlistBtn.textContent = 'Watchlist unavailable';
+                watchlistBtn.setAttribute('aria-label', 'Watchlist unavailable');
+                watchlistBtn.title = 'Watchlist unavailable';
                 return;
             }
 
             window.seerrFinWatchlist.get(mediaId, mediaType).then(updateWatchlistButton).catch(function () {
                 if (!root.isConnected || watchlistUserId !== ApiClient.getCurrentUserId()) return;
 
-                watchlistBtn.textContent = 'Retry watchlist';
+                watchlistBtn.setAttribute('aria-label', 'Retry watchlist');
+                watchlistBtn.title = 'Retry watchlist';
                 watchlistBtn.disabled = false;
             });
         }
@@ -1326,7 +1330,8 @@ window.seerrFinLog = window.seerrFinLog || {
                 return;
             }
 
-            watchlistBtn.textContent = watchlisted ? 'Removing…' : 'Adding…';
+            watchlistBtn.setAttribute('aria-label', watchlisted ? 'Removing…' : 'Adding…');
+            watchlistBtn.title = watchlistBtn.getAttribute('aria-label');
             window.seerrFinWatchlist.set(mediaId, mediaType, !watchlisted).then(updateWatchlistButton).catch(function (error) {
                 if (!root.isConnected || watchlistUserId !== ApiClient.getCurrentUserId()) return;
 
