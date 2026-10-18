@@ -59,6 +59,7 @@ public class JellyseerrRequestService
         }
 
         client.DefaultRequestHeaders.Add("X-Api-User", jellyseerrUserId.ToString());
+
         return new RequestOptionsResult
         {
             CanRequest = canRequest,
@@ -68,7 +69,11 @@ public class JellyseerrRequestService
         };
     }
 
-    public async Task<(int StatusCode, string Body, string ContentType)> SubmitRequestAsync(string username, DiscoverRequestPayload payload, CancellationToken cancellationToken)
+    public async Task<(int StatusCode, string Body, string ContentType)> SubmitRequestAsync(
+        string username,
+        DiscoverRequestPayload payload,
+        CancellationToken cancellationToken
+    )
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
         if (string.IsNullOrWhiteSpace(config.JellyseerrUrl) || string.IsNullOrWhiteSpace(config.JellyseerrApiKey))
@@ -86,22 +91,17 @@ public class JellyseerrRequestService
         {
             string kind = payload.Is4k ? "4K " : string.Empty;
             string mediaLabel = payload.MediaType == "tv" ? "series" : "movie";
+
             return (403, $"{{\"message\":\"You do not have permission to make {kind}{mediaLabel} requests.\"}}", "application/json");
         }
 
         client.DefaultRequestHeaders.Add("X-Api-User", jellyseerrUserId.ToString());
 
-        JObject body = new()
-        {
-            ["mediaType"] = payload.MediaType,
-            ["mediaId"] = payload.MediaId
-        };
+        JObject body = new() { ["mediaType"] = payload.MediaType, ["mediaId"] = payload.MediaId };
 
         if (payload.MediaType == "tv")
         {
-            body["seasons"] = payload.Seasons is { Count: > 0 }
-                ? new JArray(payload.Seasons)
-                : "all";
+            body["seasons"] = payload.Seasons is { Count: > 0 } ? new JArray(payload.Seasons) : "all";
         }
 
         // Only Advanced Requests can override Seerr defaults
@@ -129,17 +129,23 @@ public class JellyseerrRequestService
         }
 
         HttpResponseMessage response = await client
-            .PostAsync("/api/v1/request", new StringContent(body.ToString(), Encoding.UTF8, "application/json"), cancellationToken)
+            .PostAsync(
+                "/api/v1/request",
+                new StringContent(body.ToString(), Encoding.UTF8, "application/json"),
+                cancellationToken
+            )
             .ConfigureAwait(false);
 
         string content = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         string contentType = response.Content.Headers.ContentType?.MediaType ?? "application/json";
+
         return ((int)response.StatusCode, content, contentType);
     }
 
     private JArray FetchServiceOptions(HttpClient client, string serverType)
     {
         JArray options = new();
+
         try
         {
             // Seerr versions expose Radarr/Sonarr lists, which we can use to get profiles
@@ -148,12 +154,15 @@ public class JellyseerrRequestService
             {
                 listResponse = client.GetAsync($"/api/v1/settings/{serverType}").GetAwaiter().GetResult();
             }
+
             if (!listResponse.IsSuccessStatusCode)
             {
                 _logger.LogWarning(
                     "SeerrFin • failed to fetch Seerr {ServerType} services: {StatusCode}",
                     serverType,
-                    listResponse.StatusCode);
+                    listResponse.StatusCode
+                );
+
                 return options;
             }
 
@@ -184,7 +193,8 @@ public class JellyseerrRequestService
                         "SeerrFin • failed to fetch Seerr {ServerType} service details for {ServerId}: {StatusCode}",
                         serverType,
                         serverId,
-                        detailResponse.StatusCode);
+                        detailResponse.StatusCode
+                    );
                     continue;
                 }
 
@@ -192,15 +202,14 @@ public class JellyseerrRequestService
                 JObject detail = JObject.Parse(detailRaw);
                 JObject serverDetails = detail.Value<JObject>("server") ?? server;
                 JArray? profiles = detail.Value<JArray>("profiles");
-                string[] rootFolders = detail.Value<JArray>("rootFolders")?
-                    .OfType<JObject>()
-                    .Select(folder => folder.Value<string>("path"))
-                    .OfType<string>()
-                    .Where(path => !string.IsNullOrWhiteSpace(path))
-                    .Distinct()
-                    .ToArray() ?? Array.Empty<string>();
-                string? defaultRootFolder = serverDetails.Value<string>("activeDirectory")
-                    ?? rootFolders.FirstOrDefault();
+                string[] rootFolders =
+                    detail.Value<JArray>("rootFolders")
+                        ?.OfType<JObject>().Select(folder => folder.Value<string>("path")).OfType<string>()
+                        .Where(path => !string.IsNullOrWhiteSpace(path))
+                        .Distinct()
+                        .ToArray()
+                    ?? Array.Empty<string>();
+                string? defaultRootFolder = serverDetails.Value<string>("activeDirectory") ?? rootFolders.FirstOrDefault();
 
                 if (profiles == null || profiles.Count == 0)
                 {
@@ -217,18 +226,21 @@ public class JellyseerrRequestService
                         continue;
                     }
 
-                    options.Add(new JObject
-                    {
-                        ["serverId"] = serverId,
-                        ["serverName"] = serverName,
-                        ["is4k"] = is4k,
-                        ["isDefault"] = serverDetails.Value<bool?>("isDefault") ?? server.Value<bool?>("isDefault") ?? false,
-                        ["isDefaultProfile"] = defaultProfileId == profileId,
-                        ["profileId"] = profileId,
-                        ["profileName"] = profile.Value<string>("name") ?? $"Profile {profileId}",
-                        ["rootFolder"] = defaultRootFolder,
-                        ["rootFolders"] = new JArray(rootFolders)
-                    });
+                    options.Add(
+                        new JObject
+                        {
+                            ["serverId"] = serverId,
+                            ["serverName"] = serverName,
+                            ["is4k"] = is4k,
+                            ["isDefault"] =
+                                serverDetails.Value<bool?>("isDefault") ?? server.Value<bool?>("isDefault") ?? false,
+                            ["isDefaultProfile"] = defaultProfileId == profileId,
+                            ["profileId"] = profileId,
+                            ["profileName"] = profile.Value<string>("name") ?? $"Profile {profileId}",
+                            ["rootFolder"] = defaultRootFolder,
+                            ["rootFolders"] = new JArray(rootFolders)
+                        }
+                    );
                 }
             }
         }
@@ -244,6 +256,7 @@ public class JellyseerrRequestService
     {
         HttpClient client = new() { BaseAddress = new Uri(config.JellyseerrUrl!) };
         client.DefaultRequestHeaders.Add("X-Api-Key", config.JellyseerrApiKey);
+
         return client;
     }
 
@@ -261,37 +274,28 @@ public class JellyseerrRequestService
         }
 
         bool isTv = string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase);
+
         if (is4k)
         {
-            return (permissions & PermissionRequest4k) != 0 || (permissions & (isTv ? PermissionRequest4kTv : PermissionRequest4kMovie)) != 0;
+            return (permissions & PermissionRequest4k) != 0
+                || (permissions & (isTv ? PermissionRequest4kTv : PermissionRequest4kMovie)) != 0;
         }
 
         return (permissions & PermissionRequest) != 0 || (permissions & (isTv ? PermissionRequestTv : PermissionRequestMovie)) != 0;
     }
 
-    private static bool TryResolveJellyseerrUser(
-        HttpClient client,
-        string username,
-        out int jellyseerrUserId,
-        out int permissions)
+    private static bool TryResolveJellyseerrUser(HttpClient client, string username, out int jellyseerrUserId, out int permissions)
     {
         jellyseerrUserId = 0;
         permissions = 0;
 
         try
         {
-            HttpResponseMessage usersResponse = client
-                .GetAsync($"/api/v1/user?q={Uri.EscapeDataString(username)}")
-                .GetAwaiter()
-                .GetResult();
+            HttpResponseMessage usersResponse = client.GetAsync($"/api/v1/user?q={Uri.EscapeDataString(username)}").GetAwaiter().GetResult();
             string userResponseRaw = usersResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-            JObject? match = JObject.Parse(userResponseRaw).Value<JArray>("results")?
-                .OfType<JObject>()
-                .FirstOrDefault(x => string.Equals(
-                    x.Value<string>("jellyfinUsername"),
-                    username,
-                    StringComparison.OrdinalIgnoreCase));
-
+            JObject? match = JObject.Parse(userResponseRaw).Value<JArray>("results")
+                ?.OfType<JObject>()
+                .FirstOrDefault(x => string.Equals(x.Value<string>("jellyfinUsername"), username, StringComparison.OrdinalIgnoreCase));
             if (match == null)
             {
                 return false;
@@ -299,6 +303,7 @@ public class JellyseerrRequestService
 
             jellyseerrUserId = match.Value<int>("id");
             permissions = match.Value<int?>("permissions") ?? 0;
+
             return true;
         }
         catch

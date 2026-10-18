@@ -1,9 +1,7 @@
 'use strict';
 
 window.seerrFinLog = window.seerrFinLog || {
-    info: function (msg) {
-        console.log('SeerrFin • ' + msg);
-    },
+    info: function (msg) { console.log('SeerrFin • ' + msg); },
     warn: function (msg, detail) {
         if (detail !== undefined) {
             console.warn('SeerrFin • ' + msg, detail);
@@ -21,9 +19,7 @@ window.seerrFinLog = window.seerrFinLog || {
 };
 
 (function () {
-    if (window.seerrFinNativeUi) {
-        return;
-    }
+    if (window.seerrFinNativeUi) { return; }
 
     const log = window.seerrFinLog;
 
@@ -32,14 +28,12 @@ window.seerrFinLog = window.seerrFinLog || {
         buildCardImageUrl: function (plugin, item) {
             let backdropUrl = plugin.getProviderId(item, 'JellyseerrBackdrop');
             backdropUrl = plugin.resolveImageUrl(backdropUrl);
-            if (backdropUrl) {
-                return backdropUrl;
-            }
+
+            if (backdropUrl) { return backdropUrl; }
 
             const tmdbBackdropPath = plugin.getProviderId(item, 'TmdbBackdropPath');
-            if (tmdbBackdropPath) {
-                return plugin.buildTmdbImageUrl(tmdbBackdropPath, null, 'w780');
-            }
+
+            if (tmdbBackdropPath) { return plugin.buildTmdbImageUrl(tmdbBackdropPath, null, 'w780'); }
 
             return plugin.buildDiscoverPosterUrl(item);
         },
@@ -47,7 +41,9 @@ window.seerrFinLog = window.seerrFinLog || {
         // Builds Jellyfin cards for Seerr results
         createDiscoverCards: function (plugin, items, options) {
             const self = this;
+
             options = options || {};
+
             const interactive = options.interactive !== false;
             const includeMetaText = options.includeMetaText !== false;
             const forGrid = options.forGrid === true;
@@ -61,9 +57,8 @@ window.seerrFinLog = window.seerrFinLog || {
                 const mediaId = plugin.getProviderId(item, 'Tmdb') || plugin.getProviderId(item, 'Jellyseerr') || plugin.getField(item, 'id', 'Id');
                 const mediaType = plugin.normalizeDiscoverMediaType(plugin.getField(item, 'SourceType', 'sourceType', 'mediaType', 'MediaType'));
                 const safeName = plugin.escapeHtml(plugin.getField(item, 'Name', 'name', 'OriginalTitle', 'originalTitle') || 'Unknown');
-                if (!mediaId || !mediaType) {
-                    return '';
-                }
+
+                if (!mediaId || !mediaType) { return ''; }
 
                 const posterUrl = plugin.buildDiscoverPosterUrl(item);
                 const backdropUrl = self.buildCardImageUrl(plugin, item);
@@ -79,12 +74,17 @@ window.seerrFinLog = window.seerrFinLog || {
                 const meta = plugin.buildDiscoverYearText(item);
                 const yearValue = parseInt(meta.year || '0', 10) || 0;
                 const ratingValue = Number(plugin.getField(item, 'CommunityRating', 'communityRating') || 0) || 0;
-                const imageClass = !preferEnglishBackdrop && safeDisplayUrl
-                    ? 'cardImageContainer coveredImage cardContent lazy blurhashed lazy-hidden'
-                    : 'cardImageContainer coveredImage cardContent lazy-hidden';
+                const imageClass = !preferEnglishBackdrop && safeDisplayUrl ?
+                    'cardImageContainer coveredImage cardContent lazy blurhashed lazy-hidden' :
+                    'cardImageContainer coveredImage cardContent lazy-hidden';
                 const metaHtml = includeMetaText ? `
-                    <div class="cardText cardTextCentered cardText-first"><bdi><span title="${safeName}">${safeName}</span></bdi></div>
-                    <div class="cardText cardTextCentered cardText-secondary"><bdi><span title="${meta.year}">${meta.yearText}</span></bdi></div>` : '';
+                    <div class="cardText cardTextCentered cardText-first">
+                        <bdi><span title="${safeName}">${safeName}</span></bdi>
+                    </div>
+                    <div class="cardText cardTextCentered cardText-secondary">
+                        <bdi><span title="${meta.year}">${meta.yearText}</span></bdi>
+                    </div>
+                ` : '';
                 const overlayHtml = interactive ? `
                     <div class="cardOverlayContainer">
                         <div class="cardImageContainer"></div>
@@ -93,7 +93,8 @@ window.seerrFinLog = window.seerrFinLog || {
                                 <span class="material-icons cardOverlayButtonIcon cardOverlayButtonIcon-hover add" aria-hidden="true"></span>
                             </button>
                         </div>
-                    </div>` : '';
+                    </div>
+                ` : '';
 
                 return `
                     <div class="card ${cardType} card-hoverable card-withuserdata" data-seerrfin-native-card="true" data-tmdb-id="${mediaId}" data-media-type="${mediaType}" data-name="${safeName}" data-year="${yearValue}" data-rating="${ratingValue}" data-use-poster="${usePoster ? 'true' : 'false'}"${fallbackAttr}${backdropPathAttr}${posterAttr}>
@@ -106,7 +107,8 @@ window.seerrFinLog = window.seerrFinLog || {
                             </div>
                             ${metaHtml}
                         </div>
-                    </div>`;
+                    </div>
+                `;
             }).join('');
         },
 
@@ -115,29 +117,32 @@ window.seerrFinLog = window.seerrFinLog || {
             const isCarousel = kind === 'carousel';
             const usePoster = !isCarousel && !plugin.shouldUseBackdropThumbnails();
             const count = isCarousel ? 6 : (usePoster ? 8 : 6);
-            const sectionClass = isCarousel
-                ? 'verticalSection seerrfin-carousel-section seerrfin-skeleton-section'
-                : 'verticalSection seerrfin-poster-section seerrfin-skeleton-section';
-            const focusScale = isCarousel
-                ? plugin.getAdvancedCarouselSetting('browseCarouselFocusScale', false)
-                : plugin.getAdvancedCarouselSetting('discoverRowFocusScale', true);
-            const scrollerClass = focusScale
-                ? 'padded-top-focusscale padded-bottom-focusscale emby-scroller'
-                : 'emby-scroller';
-            const centerFocusAttr = plugin.getAdvancedCarouselSetting('enableCenterFocus', true)
-                ? ' data-centerfocus="true"'
-                : '';
+            const sectionClass = isCarousel ?
+                'verticalSection seerrfin-carousel-section seerrfin-skeleton-section' :
+                'verticalSection seerrfin-poster-section seerrfin-skeleton-section';
+            const focusScale = isCarousel ?
+                plugin.getAdvancedCarouselSetting('browseCarouselFocusScale', false) :
+                plugin.getAdvancedCarouselSetting('discoverRowFocusScale', true);
+            const scrollerClass = focusScale ?
+                'padded-top-focusscale padded-bottom-focusscale emby-scroller' :
+                'emby-scroller';
+            const centerFocusAttr = plugin.getAdvancedCarouselSetting('enableCenterFocus', true) ?
+                ' data-centerfocus="true"' :
+                '';
             const safeTitle = plugin.escapeHtml(title || 'Loading');
             const cardType = usePoster ? 'overflowPortraitCard' : 'overflowBackdropCard';
             const padderType = usePoster ? 'cardPadder-overflowPortrait' : 'cardPadder-overflowBackdrop';
 
             // match real native cards and meta lines
             let cards = '';
+
             for (let i = 0; i < count; i++) {
                 const metaHtml = isCarousel ? '' : `
                     <div class="cardText cardTextCentered cardText-secondary">
                         <span class="seerrfin-native-skeleton-text seerrfin-native-skeleton-text--meta"></span>
-                    </div>`;
+                    </div>
+                `;
+
                 cards += `
                     <div class="card ${cardType} card-hoverable" data-seerrfin-skeleton-card="true" aria-hidden="true">
                         <div class="cardBox cardBox-bottompadded">
@@ -150,7 +155,8 @@ window.seerrFinLog = window.seerrFinLog || {
                             </div>
                             ${metaHtml}
                         </div>
-                    </div>`;
+                    </div>
+                `;
             }
 
             return plugin.mountFromHtml(`
@@ -163,7 +169,8 @@ window.seerrFinLog = window.seerrFinLog || {
                             ${cards}
                         </div>
                     </div>
-                </div>`);
+                </div>
+            `);
         },
 
         // Builds carousel cards for genres providers studios and networks
@@ -172,23 +179,25 @@ window.seerrFinLog = window.seerrFinLog || {
             const name = item.name || 'Unknown';
             const safeName = plugin.escapeHtml(name);
             const showLogo = plugin.shouldShowLogo(kind);
-            const logoStyleKey = kind === 'provider'
-                ? 'streamingService'
-                : (kind === 'studio' || kind === 'network' ? 'studioNetwork' : null);
+            const logoStyleKey = kind === 'provider' ?
+                'streamingService' :
+                (kind === 'studio' || kind === 'network' ? 'studioNetwork' : null);
             const logoPath = item.logo || item.logoPath;
-            const logoUrl = showLogo && logoStyleKey && logoPath && logoPath !== 'not found'
-                ? plugin.buildTmdbImageUrl(logoPath, logoStyleKey)
-                : null;
+            const logoUrl = showLogo && logoStyleKey && logoPath && logoPath !== 'not found' ?
+                plugin.buildTmdbImageUrl(logoPath, logoStyleKey) :
+                null;
 
             let imageStyle = '';
             let mediaHtml = '';
 
             if (kind === 'genre' && (plugin._displaySettings || {}).GenreUseBackdrops !== false) {
                 const backdrops = item.backdrops || [];
+
                 if (backdrops.length) {
                     const mode = ((plugin._advancedSettings || {}).tmdb || {}).genreBackdropSelectionMode || 'random';
                     const backdropPath = mode === 'first' ? backdrops[0] : backdrops[Math.floor(Math.random() * backdrops.length)];
                     const backdropUrl = plugin.buildTmdbImageUrl(backdropPath, 'genreBackdrop');
+
                     if (backdropUrl) {
                         imageStyle = ` style="background-image:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.55)),url('${backdropUrl.replace(/'/g, "\\'")}')"`;
                     }
@@ -197,7 +206,9 @@ window.seerrFinLog = window.seerrFinLog || {
 
             if (logoUrl) {
                 imageStyle = ' style="display:flex;align-items:center;justify-content:center;background-color:var(--jf-palette-background-paper,rgba(255,255,255,.03))"';
+
                 const inset = item.weirdSize ? '20% 12%' : '29% 15%';
+
                 mediaHtml = `<span role="img" aria-label="${safeName}" style="position:absolute;inset:${inset};background-image:url('${plugin.escapeHtml(logoUrl).replace(/'/g, "\\'")}');background-size:contain;background-position:center;background-repeat:no-repeat"></span>`;
             }
 
@@ -211,9 +222,12 @@ window.seerrFinLog = window.seerrFinLog || {
                                 ${mediaHtml}
                             </div>
                         </div>
-                        <div class="cardText cardTextCentered cardText-first"><bdi><span title="${safeName}">${safeName}</span></bdi></div>
+                        <div class="cardText cardTextCentered cardText-first">
+                            <bdi><span title="${safeName}">${safeName}</span></bdi>
+                        </div>
                     </div>
-                </div>`;
+                </div>
+            `;
         },
 
         // Renders native grid using Jellyfin page markup
@@ -228,7 +242,9 @@ window.seerrFinLog = window.seerrFinLog || {
                             <h2 class="sectionTitle sectionTitle-cards"></h2>
                         </div>
                         <div class="flex align-items-center justify-content-center flex-wrap-wrap padded-left padded-right focuscontainer-x">
-                            <div class="paging"><div class="listPaging"><span data-seerrfin-paging-text style="vertical-align:middle;"></span></div></div>
+                            <div class="paging">
+                                <div class="listPaging"><span data-seerrfin-paging-text style="vertical-align:middle;"></span></div>
+                            </div>
                             <button type="button" is="paper-icon-button-light" class="btnSelectView autoSize paper-icon-button-light" title="Select view" disabled data-grid-menu="view">
                                 <span class="material-icons view_comfy" aria-hidden="true"></span>
                             </button>
@@ -242,28 +258,30 @@ window.seerrFinLog = window.seerrFinLog || {
                         </div>
                         <div data-seerrfin-status style="display:none" class="listItemBodyText secondary padded-left padded-right"></div>
                     </div>
-                </div>`;
+                </div>
+            `;
         },
 
         // Gets Jellyfin's webpack require so we can reach bundled UI modules
         getJellyfinWebpackRequire: function () {
-            if (window.__seerrfinWebpackRequire) {
-                return window.__seerrfinWebpackRequire;
-            }
+            if (window.__seerrfinWebpackRequire) { return window.__seerrfinWebpackRequire; }
 
-            if (!window.webpackChunk || typeof window.webpackChunk.push !== 'function') {
-                return null;
-            }
+            if (!window.webpackChunk || typeof window.webpackChunk.push !== 'function') { return null; }
 
             try {
                 let req = null;
-                window.webpackChunk.push([[`seerrfin_native_${Date.now()}`], {}, function (__webpackRequire) {
-                    req = __webpackRequire;
-                }]);
+
+                window.webpackChunk.push([
+                    [`seerrfin_native_${Date.now()}`],
+                    {},
+                    function (__webpackRequire) { req = __webpackRequire; }
+                ]);
                 window.__seerrfinWebpackRequire = req;
+
                 return req;
             } catch (err) {
                 log.warn('failed to access Jellyfin webpack runtime', err);
+
                 return null;
             }
         },
@@ -271,11 +289,11 @@ window.seerrFinLog = window.seerrFinLog || {
         // Finds a Jellyfin webpack module by checking the module factory source
         findJellyfinModule: function (predicate) {
             const req = this.getJellyfinWebpackRequire();
-            if (!req || !req.m) {
-                return null;
-            }
+
+            if (!req || !req.m) { return null; }
 
             const cacheKey = predicate.cacheKey;
+
             if (cacheKey && this._jellyfinModuleCache && this._jellyfinModuleCache[cacheKey]) {
                 return this._jellyfinModuleCache[cacheKey];
             }
@@ -283,14 +301,16 @@ window.seerrFinLog = window.seerrFinLog || {
             for (const id of Object.keys(req.m)) {
                 try {
                     const factorySource = String(req.m[id]);
-                    if (!predicate(factorySource, id)) {
-                        continue;
-                    }
+
+                    if (!predicate(factorySource, id)) { continue; }
+
                     const moduleExports = req(id);
+
                     if (cacheKey) {
                         this._jellyfinModuleCache = this._jellyfinModuleCache || {};
                         this._jellyfinModuleCache[cacheKey] = moduleExports;
                     }
+
                     return moduleExports;
                 } catch (err) {
                     // Keep scanning; unrelated factories may throw when loaded out of band.
@@ -302,29 +322,26 @@ window.seerrFinLog = window.seerrFinLog || {
 
         // Finds Jellyfin's actionSheet module for native dropdown menus
         getNativeActionSheet: function () {
-            const predicate = function (source) {
-                return source.indexOf('actionSheet') !== -1 && source.indexOf('positionTo') !== -1;
-            };
+            const predicate = function (source) { return source.indexOf('actionSheet') !== -1 && source.indexOf('positionTo') !== -1; };
             predicate.cacheKey = 'actionSheet';
+
             const moduleExports = this.findJellyfinModule(predicate);
+
             return moduleExports && (moduleExports.default || moduleExports);
         },
 
         // Opens Jellyfin's native action sheet for grid menus
         showNativeActionSheet: function (button, items, callback) {
             const actionSheet = this.getNativeActionSheet();
+
             if (!actionSheet || typeof actionSheet.show !== 'function') {
                 log.warn('native action sheet unavailable');
+
                 return false;
             }
 
-            actionSheet.show({
-                items: items,
-                positionTo: button,
-                callback: callback
-            }).catch(function (err) {
-                log.info('native action sheet dismissed or failed', err);
-            });
+            actionSheet.show({ items: items, positionTo: button, callback: callback }).catch(function (err) { log.info('native action sheet dismissed or failed', err); });
+
             return true;
         },
 
@@ -338,6 +355,7 @@ window.seerrFinLog = window.seerrFinLog || {
                     { value: 'ThumbCard', label: 'Thumb Card' }
                 ];
             }
+
             if (type === 'sort') {
                 return [
                     { value: 'title', label: 'Title' },
@@ -345,15 +363,15 @@ window.seerrFinLog = window.seerrFinLog || {
                     { value: 'rating', label: 'Community rating' }
                 ];
             }
+
             return [];
         },
 
         // Binds native grid view and sort controls
         bindGridControls: function (plugin, gridView) {
             const self = this;
-            if (!gridView || gridView.dataset.controlsBound === 'true') {
-                return;
-            }
+
+            if (!gridView || gridView.dataset.controlsBound === 'true') { return; }
 
             gridView.dataset.controlsBound = 'true';
             gridView.querySelectorAll('[data-grid-menu]').forEach(function (button) {
@@ -367,13 +385,19 @@ window.seerrFinLog = window.seerrFinLog || {
                 button.addEventListener('click', function (event) {
                     event.preventDefault();
                     event.stopPropagation();
-                    if (button.disabled) {
-                        return;
-                    }
+
+                    if (button.disabled) { return; }
+
                     const type = button.getAttribute('data-grid-menu');
 
                     if (type === 'view' && window.LibraryBrowser && typeof window.LibraryBrowser.showLayoutMenu === 'function') {
-                        window.LibraryBrowser.showLayoutMenu(button, gridView.dataset.gridViewMode || 'ThumbCard', ['Poster', 'PosterCard', 'Thumb', 'ThumbCard']);
+                        window.LibraryBrowser.showLayoutMenu(button, gridView.dataset.gridViewMode || 'ThumbCard', [
+                            'Poster',
+                            'PosterCard',
+                            'Thumb',
+                            'ThumbCard'
+                        ]);
+
                         return;
                     }
 
@@ -383,6 +407,7 @@ window.seerrFinLog = window.seerrFinLog || {
                             SortOrder: gridView.dataset.gridSortOrder || 'Ascending',
                             StartIndex: 0
                         };
+
                         window.LibraryBrowser.showSortMenu({
                             button: button,
                             query: query,
@@ -394,6 +419,7 @@ window.seerrFinLog = window.seerrFinLog || {
                             callback: function () {
                                 gridView.dataset.gridSortBy = query.SortBy;
                                 gridView.dataset.gridSortOrder = query.SortOrder;
+
                                 if (query.SortBy.indexOf('CommunityRating') === 0) {
                                     gridView.dataset.gridSort = 'rating';
                                 } else if (query.SortBy.indexOf('PremiereDate') === 0) {
@@ -401,9 +427,11 @@ window.seerrFinLog = window.seerrFinLog || {
                                 } else {
                                     gridView.dataset.gridSort = 'title';
                                 }
+
                                 plugin.applyGridSort(gridView);
                             }
                         });
+
                         return;
                     }
 
@@ -418,6 +446,7 @@ window.seerrFinLog = window.seerrFinLog || {
                             gridView.dataset.gridViewMode = value || 'ThumbCard';
                             plugin.applyGridViewMode(gridView);
                         });
+
                         return;
                     }
 
@@ -432,6 +461,7 @@ window.seerrFinLog = window.seerrFinLog || {
                             gridView.dataset.gridSort = value || 'title';
                             plugin.applyGridSort(gridView);
                         });
+
                         return;
                     }
                 });
@@ -440,28 +470,24 @@ window.seerrFinLog = window.seerrFinLog || {
 
         // Updates paging text for the grid
         updateGridChrome: function (gridView) {
-            if (!gridView) {
-                return;
-            }
+            if (!gridView) { return; }
 
             const loaded = parseInt(gridView.dataset.loadedCount || '0', 10);
             const total = parseInt(gridView.dataset.total || '0', 10);
             const pagingText = gridView.querySelector('[data-seerrfin-paging-text]');
+
             if (pagingText) {
-                pagingText.textContent = loaded > 0
-                    ? ('1-' + loaded + (total > 0 ? ' of ' + total : ''))
-                    : '';
+                pagingText.textContent = loaded > 0 ?
+                    ('1-' + loaded + (total > 0 ? ' of ' + total : '')) :
+                    '';
             }
         },
 
         // Enables or disables the grid toolbar buttons
         setGridControlsEnabled: function (gridView, enabled) {
-            if (!gridView) {
-                return;
-            }
-            gridView.querySelectorAll('[data-grid-menu]').forEach(function (button) {
-                button.disabled = !enabled;
-            });
+            if (!gridView) { return; }
+
+            gridView.querySelectorAll('[data-grid-menu]').forEach(function (button) { button.disabled = !enabled; });
         }
     };
 })();

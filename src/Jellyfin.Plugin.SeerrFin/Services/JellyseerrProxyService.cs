@@ -19,7 +19,8 @@ public class JellyseerrProxyService
         HttpMethod method,
         string relativePath,
         string? requestBody,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
         if (string.IsNullOrWhiteSpace(config.JellyseerrUrl) || string.IsNullOrWhiteSpace(config.JellyseerrApiKey))
@@ -49,6 +50,7 @@ public class JellyseerrProxyService
             : $"/api/v1/{relativePath.TrimStart('/')}";
 
         using HttpRequestMessage request = new(method, apiPath);
+
         if (requestBody != null && method != HttpMethod.Get && method != HttpMethod.Head)
         {
             request.Content = new StringContent(requestBody, Encoding.UTF8, "application/json");
@@ -59,31 +61,31 @@ public class JellyseerrProxyService
             using HttpResponseMessage response = await client.SendAsync(request, cancellationToken).ConfigureAwait(false);
             string body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             string contentType = response.Content.Headers.ContentType?.MediaType ?? "application/json";
+
             return ((int)response.StatusCode, body, contentType);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • Seerr proxy failed for {Path}", apiPath);
+
             return (502, "{\"error\":true,\"message\":\"Failed to reach Seerr.\"}", "application/json");
         }
     }
 
-    private static async Task<int?> ResolveJellyseerrUserIdAsync(
-        HttpClient client,
-        string username,
-        CancellationToken cancellationToken)
+    private static async Task<int?> ResolveJellyseerrUserIdAsync(HttpClient client, string username, CancellationToken cancellationToken)
     {
         using HttpResponseMessage usersResponse = await client
             .GetAsync($"/api/v1/user?q={Uri.EscapeDataString(username)}", cancellationToken)
             .ConfigureAwait(false);
         string userResponseRaw = await usersResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
         if (!usersResponse.IsSuccessStatusCode)
         {
             return null;
         }
 
-        return Newtonsoft.Json.Linq.JObject.Parse(userResponseRaw).Value<Newtonsoft.Json.Linq.JArray>("results")?
-            .OfType<Newtonsoft.Json.Linq.JObject>()
+        return Newtonsoft.Json.Linq.JObject.Parse(userResponseRaw).Value<Newtonsoft.Json.Linq.JArray>("results")
+            ?.OfType<Newtonsoft.Json.Linq.JObject>()
             .FirstOrDefault(x => string.Equals(x.Value<string>("jellyfinUsername"), username, StringComparison.OrdinalIgnoreCase))
             ?.Value<int>("id");
     }

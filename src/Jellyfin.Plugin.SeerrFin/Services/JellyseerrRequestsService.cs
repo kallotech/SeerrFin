@@ -13,7 +13,9 @@ namespace Jellyfin.Plugin.SeerrFin.Services;
 
 public class JellyseerrRequestsService
 {
-    private static readonly ConcurrentDictionary<string, (JObject Data, DateTime CachedAt)> MediaDetailCache = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<string, (JObject Data, DateTime CachedAt)> MediaDetailCache = new(
+        StringComparer.OrdinalIgnoreCase
+    );
     private static readonly ConcurrentDictionary<string, Task<JObject?>> MediaDetailInFlight = new(StringComparer.OrdinalIgnoreCase);
     private static readonly TimeSpan MediaDetailCacheTtl = TimeSpan.FromMinutes(10);
 
@@ -22,7 +24,12 @@ public class JellyseerrRequestsService
     private readonly IUserManager _userManager;
     private readonly ServarrProgressService _servarrProgressService;
 
-    public JellyseerrRequestsService(ILogger<JellyseerrRequestsService> logger, ILibraryManager libraryManager, IUserManager userManager, ServarrProgressService servarrProgressService)
+    public JellyseerrRequestsService(
+        ILogger<JellyseerrRequestsService> logger,
+        ILibraryManager libraryManager,
+        IUserManager userManager,
+        ServarrProgressService servarrProgressService
+    )
     {
         _logger = logger;
         _libraryManager = libraryManager;
@@ -36,7 +43,8 @@ public class JellyseerrRequestsService
         int take,
         int skip,
         string? filter,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
         if (string.IsNullOrWhiteSpace(config.JellyseerrUrl) || string.IsNullOrWhiteSpace(config.JellyseerrApiKey))
@@ -72,10 +80,12 @@ public class JellyseerrRequestsService
         client.DefaultRequestHeaders.Add("X-Api-User", jellyseerrUserId.ToString());
 
         string apiPath = $"/api/v1/request?take={take}&skip={skip}&sort=added&sortDirection=desc{filterParam}";
+
         try
         {
             using HttpResponseMessage response = await client.GetAsync(apiPath, cancellationToken).ConfigureAwait(false);
             string raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
             if (!response.IsSuccessStatusCode)
             {
                 return ((int)response.StatusCode, raw);
@@ -92,13 +102,18 @@ public class JellyseerrRequestsService
             User? user = _userManager.GetUserById(userId);
 
             (JObject Req, JObject? Details)[] enriched = await Task.WhenAll(
-                results.OfType<JObject>().Select(async req =>
-                {
-                    JObject? details = await GetMediaDetailsAsync(client, req, cancellationToken).ConfigureAwait(false);
-                    return (req, details);
-                })).ConfigureAwait(false);
+                    results.OfType<JObject>()
+                        .Select(async req =>
+                        {
+                            JObject? details = await GetMediaDetailsAsync(client, req, cancellationToken).ConfigureAwait(false);
+
+                            return (req, details);
+                        })
+                )
+                .ConfigureAwait(false);
 
             JArray mappedRequests = new();
+
             foreach ((JObject req, JObject? details) in enriched)
             {
                 mappedRequests.Add(MapRequest(req, details, user, libraryItemCache));
@@ -107,9 +122,9 @@ public class JellyseerrRequestsService
             if (isComingSoonFilter)
             {
                 mappedRequests = new JArray(
-                    mappedRequests.OfType<JObject>()
-                        .Where(r => r.Value<bool?>("isComingSoon") == true)
-                        .OrderBy(r => r.Value<string>("releaseSortDate") ?? "9999"));
+                    mappedRequests.OfType<JObject>().Where(r => r.Value<bool?>("isComingSoon") == true)
+                        .OrderBy(r => r.Value<string>("releaseSortDate") ?? "9999")
+                );
             }
 
             await _servarrProgressService.EnrichRequestsAsync(mappedRequests, cancellationToken).ConfigureAwait(false);
@@ -144,18 +159,19 @@ public class JellyseerrRequestsService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to fetch Seerr requests");
+
             return (502, "{\"error\":true,\"message\":\"Failed to reach Seerr.\"}");
         }
     }
 
-    public async Task<(byte[]? Data, string? ContentType)> GetAvatarAsync(
-        string? path,
-        CancellationToken cancellationToken)
+    public async Task<(byte[]? Data, string? ContentType)> GetAvatarAsync(string? path, CancellationToken cancellationToken)
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
-        if (string.IsNullOrWhiteSpace(config.JellyseerrUrl)
+        if (
+            string.IsNullOrWhiteSpace(config.JellyseerrUrl)
             || string.IsNullOrWhiteSpace(config.JellyseerrApiKey)
-            || string.IsNullOrWhiteSpace(path))
+            || string.IsNullOrWhiteSpace(path)
+        )
         {
             return (null, null);
         }
@@ -172,16 +188,20 @@ public class JellyseerrRequestsService
             avatarPath = $"/{avatarPath}";
         }
 
-        if (avatarPath.Contains("..", StringComparison.Ordinal)
+        if (
+            avatarPath.Contains("..", StringComparison.Ordinal)
             || avatarPath.Contains("://", StringComparison.Ordinal)
-            || avatarPath.Contains('@'))
+            || avatarPath.Contains('@')
+        )
         {
             return (null, null);
         }
 
-        if (!avatarPath.StartsWith("/avatar/", StringComparison.OrdinalIgnoreCase)
+        if (
+            !avatarPath.StartsWith("/avatar/", StringComparison.OrdinalIgnoreCase)
             && !avatarPath.StartsWith("/avatarproxy/", StringComparison.OrdinalIgnoreCase)
-            && !avatarPath.StartsWith("/api/v1/avatar/", StringComparison.OrdinalIgnoreCase))
+            && !avatarPath.StartsWith("/api/v1/avatar/", StringComparison.OrdinalIgnoreCase)
+        )
         {
             return (null, null);
         }
@@ -198,11 +218,13 @@ public class JellyseerrRequestsService
             }
 
             byte[] data = await response.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(false);
+
             return (data, response.Content.Headers.ContentType?.MediaType ?? "image/jpeg");
         }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "SeerrFin • failed to proxy Seerr avatar");
+
             return (null, null);
         }
     }
@@ -214,17 +236,10 @@ public class JellyseerrRequestsService
             ? Math.Max(1, (int)Math.Ceiling(requests.Count / (double)take))
             : pageInfo?.Value<int?>("pages") ?? 1;
 
-        return new JObject
-        {
-            ["requests"] = requests,
-            ["totalPages"] = totalPages
-        };
+        return new JObject { ["requests"] = requests, ["totalPages"] = totalPages };
     }
 
-    private static async Task<JObject?> GetMediaDetailsAsync(
-        HttpClient client,
-        JObject req,
-        CancellationToken cancellationToken)
+    private static async Task<JObject?> GetMediaDetailsAsync(HttpClient client, JObject req, CancellationToken cancellationToken)
     {
         JObject? media = req.Value<JObject>("media");
         string? type = req.Value<string>("type") ?? media?.Value<string>("mediaType");
@@ -235,12 +250,19 @@ public class JellyseerrRequestsService
         }
 
         string cacheKey = $"{type}:{tmdbId.Value}";
-        if (MediaDetailCache.TryGetValue(cacheKey, out (JObject Data, DateTime CachedAt) cached) && DateTime.UtcNow - cached.CachedAt < MediaDetailCacheTtl)
+        if (
+            MediaDetailCache.TryGetValue(cacheKey, out (JObject Data, DateTime CachedAt) cached)
+            && DateTime.UtcNow - cached.CachedAt < MediaDetailCacheTtl
+        )
         {
             return cached.Data;
         }
 
-        Task<JObject?> fetchTask = MediaDetailInFlight.GetOrAdd(cacheKey, _ => FetchMediaDetailsAsync(client, type, tmdbId.Value, cancellationToken));
+        Task<JObject?> fetchTask = MediaDetailInFlight.GetOrAdd(
+            cacheKey,
+            _ => FetchMediaDetailsAsync(client, type, tmdbId.Value, cancellationToken)
+        );
+
         try
         {
             JObject? details = await fetchTask.ConfigureAwait(false);
@@ -258,11 +280,14 @@ public class JellyseerrRequestsService
         }
     }
 
-    private static async Task<JObject?> FetchMediaDetailsAsync(HttpClient client, string type, int tmdbId, CancellationToken cancellationToken)
+    private static async Task<JObject?> FetchMediaDetailsAsync(
+        HttpClient client,
+        string type,
+        int tmdbId,
+        CancellationToken cancellationToken
+    )
     {
-        string path = string.Equals(type, "tv", StringComparison.OrdinalIgnoreCase)
-            ? $"/api/v1/tv/{tmdbId}"
-            : $"/api/v1/movie/{tmdbId}";
+        string path = string.Equals(type, "tv", StringComparison.OrdinalIgnoreCase) ? $"/api/v1/tv/{tmdbId}" : $"/api/v1/movie/{tmdbId}";
 
         try
         {
@@ -273,6 +298,7 @@ public class JellyseerrRequestsService
             }
 
             string raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
             return JObject.Parse(raw);
         }
         catch
@@ -316,8 +342,7 @@ public class JellyseerrRequestsService
         int? externalServiceId = is4k
             ? media?.Value<int?>("externalServiceId4k")
             : media?.Value<int?>("externalServiceId");
-        int? serviceId = (is4k ? media?.Value<int?>("serviceId4k") : media?.Value<int?>("serviceId"))
-            ?? req.Value<int?>("serverId");
+        int? serviceId = (is4k ? media?.Value<int?>("serviceId4k") : media?.Value<int?>("serviceId")) ?? req.Value<int?>("serverId");
 
         JObject mapped = new()
         {
@@ -326,19 +351,24 @@ public class JellyseerrRequestsService
             ["type"] = type,
             ["externalServiceId"] = externalServiceId,
             ["serviceId"] = serviceId,
-            ["servarrUrl"] = ServarrProgressService.NormalizeBrowseUrl(is4k
-                ? media?.Value<string>("serviceUrl4k")
-                : media?.Value<string>("serviceUrl")),
+            ["servarrUrl"] = ServarrProgressService.NormalizeBrowseUrl(
+                is4k ? media?.Value<string>("serviceUrl4k") : media?.Value<string>("serviceUrl")
+            ),
             ["posterPath"] = posterPath,
             ["backdropPath"] = backdropPath,
-            ["title"] = details?.Value<string>("title")
+            ["title"] =
+                details?.Value<string>("title")
                 ?? details?.Value<string>("name")
                 ?? media?.Value<string>("title")
                 ?? media?.Value<string>("name")
                 ?? "Unknown",
             ["year"] = ExtractYear(details?["releaseDate"]?.ToString() ?? details?["firstAirDate"]?.ToString()),
-            ["posterUrl"] = string.IsNullOrWhiteSpace(posterPath) ? null : $"https://image.tmdb.org/t/p/w300{posterPath}",
-            ["backdropUrl"] = string.IsNullOrWhiteSpace(backdropPath) ? null : $"https://image.tmdb.org/t/p/w780{backdropPath}",
+            ["posterUrl"] = string.IsNullOrWhiteSpace(posterPath)
+                ? null
+                : $"https://image.tmdb.org/t/p/w300{posterPath}",
+            ["backdropUrl"] = string.IsNullOrWhiteSpace(backdropPath)
+                ? null
+                : $"https://image.tmdb.org/t/p/w780{backdropPath}",
             ["mediaStatusLabel"] = GetMediaStatusLabel(requestStatus, mediaStatus),
             ["is4k"] = is4k,
             ["requestedBy"] = requestedBy?["displayName"] ?? requestedBy?["username"] ?? "Unknown",
@@ -346,7 +376,6 @@ public class JellyseerrRequestsService
             ["createdAt"] = req["createdAt"],
             ["seasonNumbers"] = GetSeasonNumbers(req.Value<JArray>("seasons"))
         };
-
         if (HasFutureRelease(mapped, details))
         {
             mapped["isComingSoon"] = true;
@@ -387,6 +416,7 @@ public class JellyseerrRequestsService
         }
 
         Guid? itemId = null;
+
         try
         {
             BaseItemKind[] itemTypes = string.Equals(type, "tv", StringComparison.OrdinalIgnoreCase)
@@ -397,10 +427,7 @@ public class JellyseerrRequestsService
             {
                 Recursive = true,
                 IncludeItemTypes = itemTypes,
-                HasAnyProviderId = new Dictionary<string, string>
-                {
-                    { "Tmdb", tmdbId.ToString(CultureInfo.InvariantCulture) }
-                },
+                HasAnyProviderId = new Dictionary<string, string> { { "Tmdb", tmdbId.ToString(CultureInfo.InvariantCulture) } },
                 Limit = 1
             };
 
@@ -413,22 +440,22 @@ public class JellyseerrRequestsService
         }
 
         cache[cacheKey] = itemId;
+
         return itemId;
     }
 
     private static JArray GetSeasonNumbers(JArray? seasons)
     {
         JArray numbers = new();
+
         if (seasons == null)
         {
             return numbers;
         }
 
-        foreach (int? seasonNumber in seasons
-                     .OfType<JObject>()
-                     .Select(s => s.Value<int?>("seasonNumber"))
-                     .Where(n => n != null)
-                     .OrderBy(n => n))
+        foreach (
+            int? seasonNumber in seasons.OfType<JObject>().Select(s => s.Value<int?>("seasonNumber")).Where(n => n != null).OrderBy(n => n)
+        )
         {
             numbers.Add(seasonNumber);
         }
@@ -444,8 +471,8 @@ public class JellyseerrRequestsService
 
         if (string.Equals(type, "tv", StringComparison.OrdinalIgnoreCase))
         {
-            string? nextAirDate = details?["nextEpisodeToAir"]?["airDate"]?.ToString()
-                ?? details?["nextAiring"]?["airDate"]?.ToString();
+            string? nextAirDate = details?["nextEpisodeToAir"]?["airDate"]?.ToString() ?? details?["nextAiring"]?["airDate"]?.ToString();
+
             return !string.IsNullOrWhiteSpace(nextAirDate)
                 && DateTime.TryParse(nextAirDate, out DateTime airDate)
                 && airDate.Date > today
@@ -457,10 +484,12 @@ public class JellyseerrRequestsService
             return false;
         }
 
-        return new[] { details?["digitalReleaseDate"]?.ToString(), details?["releaseDate"]?.ToString() }
-            .Any(dateValue => !string.IsNullOrWhiteSpace(dateValue)
+        return new[] { details?["digitalReleaseDate"]?.ToString(), details?["releaseDate"]?.ToString() }.Any(
+            dateValue =>
+                !string.IsNullOrWhiteSpace(dateValue)
                 && DateTime.TryParse(dateValue, out DateTime releaseDate)
-                && releaseDate.Date > today);
+                && releaseDate.Date > today
+        );
     }
 
     private static DateTime GetReleaseSortDate(JObject mapped, JObject? details)
@@ -473,10 +502,7 @@ public class JellyseerrRequestsService
         return DateTime.TryParse(candidate, out DateTime parsed) ? parsed : DateTime.MaxValue;
     }
 
-    private static int? ExtractYear(string? dateValue) =>
-        !string.IsNullOrWhiteSpace(dateValue) && dateValue.Length >= 4 && int.TryParse(dateValue[..4], out int year)
-            ? year
-            : null;
+    private static int? ExtractYear(string? dateValue) => !string.IsNullOrWhiteSpace(dateValue) && dateValue.Length >= 4 && int.TryParse(dateValue[..4], out int year) ? year : null;
 
     private static string GetMediaStatusLabel(int? requestStatus, int? mediaStatus)
     {
@@ -509,13 +535,11 @@ public class JellyseerrRequestsService
     {
         HttpClient client = new() { BaseAddress = new Uri(config.JellyseerrUrl!) };
         client.DefaultRequestHeaders.Add("X-Api-Key", config.JellyseerrApiKey);
+
         return client;
     }
 
-    private static async Task<int?> ResolveJellyseerrUserIdAsync(
-        HttpClient client,
-        string username,
-        CancellationToken cancellationToken)
+    private static async Task<int?> ResolveJellyseerrUserIdAsync(HttpClient client, string username, CancellationToken cancellationToken)
     {
         using HttpResponseMessage usersResponse = await client
             .GetAsync($"/api/v1/user?q={Uri.EscapeDataString(username)}", cancellationToken)
@@ -526,8 +550,9 @@ public class JellyseerrRequestsService
         }
 
         string userResponseRaw = await usersResponse.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        return JObject.Parse(userResponseRaw).Value<JArray>("results")?
-            .OfType<JObject>()
+
+        return JObject.Parse(userResponseRaw).Value<JArray>("results")
+            ?.OfType<JObject>()
             .FirstOrDefault(x => string.Equals(x.Value<string>("jellyfinUsername"), username, StringComparison.OrdinalIgnoreCase))
             ?.Value<int>("id");
     }

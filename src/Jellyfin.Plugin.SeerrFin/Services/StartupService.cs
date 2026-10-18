@@ -31,13 +31,12 @@ public class StartupService : IScheduledTask
         _logger.LogInformation("SeerrFin • registering file transformations");
 
         // Resolve File Transformation assembly at runtime via reflection
-        var fileTransformationAssembly = AssemblyLoadContext.All
-            .SelectMany(x => x.Assemblies)
+        var fileTransformationAssembly = AssemblyLoadContext.All.SelectMany(x => x.Assemblies)
             .FirstOrDefault(x => x.FullName?.Contains(".FileTransformation", StringComparison.Ordinal) ?? false);
-
         if (fileTransformationAssembly == null)
         {
             _logger.LogWarning("SeerrFin • File Transformation plugin not found. UI injection won't work");
+
             return Task.CompletedTask;
         }
 
@@ -45,6 +44,7 @@ public class StartupService : IScheduledTask
         if (pluginInterfaceType == null)
         {
             _logger.LogWarning("SeerrFin • File Transformation PluginInterface type not found");
+
             return Task.CompletedTask;
         }
 
@@ -52,6 +52,7 @@ public class StartupService : IScheduledTask
         if (registerTransformation == null)
         {
             _logger.LogWarning("SeerrFin • File Transformation RegisterTransformation method not found");
+
             return Task.CompletedTask;
         }
 
@@ -71,6 +72,7 @@ public class StartupService : IScheduledTask
         Register(IndexHtmlTransformationId, "index.html", nameof(TransformationPatches.IndexHtml));
         Register(WebConfigTransformationId, "config.json", nameof(TransformationPatches.WebConfig));
         _logger.LogInformation("SeerrFin • registered index.html and config.json transformations");
+
         return Task.CompletedTask;
     }
 

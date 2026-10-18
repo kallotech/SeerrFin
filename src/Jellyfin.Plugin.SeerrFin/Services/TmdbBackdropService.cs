@@ -21,17 +21,19 @@ public class TmdbBackdropService
         _logger = logger;
     }
 
-    public async Task<CachedBackdropDto?> GetCachedBackdropAsync(string mediaType, int tmdbId, bool preferNeutral = false, CancellationToken cancellationToken = default)
+    public async Task<CachedBackdropDto?> GetCachedBackdropAsync(
+        string mediaType,
+        int tmdbId,
+        bool preferNeutral = false,
+        CancellationToken cancellationToken = default
+    )
     {
         BackdropBatchItemDto? match = await ResolveBackdropItemAsync(
-            new BackdropBatchRequestItemDto
-            {
-                MediaType = mediaType,
-                TmdbId = tmdbId
-            },
-            preferNeutral,
-            cancellationToken).ConfigureAwait(false);
-
+                new BackdropBatchRequestItemDto { MediaType = mediaType, TmdbId = tmdbId },
+                preferNeutral,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         if (match == null || string.IsNullOrEmpty(match.BackdropUrl))
         {
             return null;
@@ -45,14 +47,22 @@ public class TmdbBackdropService
         };
     }
 
-    public async Task<List<BackdropBatchItemDto>> GetCachedBackdropsAsync(IEnumerable<BackdropBatchRequestItemDto> items, CancellationToken cancellationToken = default)
+    public async Task<List<BackdropBatchItemDto>> GetCachedBackdropsAsync(
+        IEnumerable<BackdropBatchRequestItemDto> items,
+        CancellationToken cancellationToken = default
+    )
     {
         List<BackdropBatchRequestItemDto> uniqueItems = items
-            .Where(item => item.TmdbId > 0 && (string.Equals(item.MediaType, "movie", StringComparison.OrdinalIgnoreCase) || string.Equals(item.MediaType, "tv", StringComparison.OrdinalIgnoreCase)))
+            .Where(item =>
+                item.TmdbId > 0
+                && (
+                    string.Equals(item.MediaType, "movie", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(item.MediaType, "tv", StringComparison.OrdinalIgnoreCase)
+                )
+            )
             .GroupBy(item => $"{item.MediaType.ToLowerInvariant()}:{item.TmdbId}")
             .Select(group => group.First())
             .ToList();
-
         if (uniqueItems.Count == 0)
         {
             return new List<BackdropBatchItemDto>();
@@ -63,6 +73,7 @@ public class TmdbBackdropService
         IEnumerable<Task<BackdropBatchItemDto?>> tasks = uniqueItems.Select(async item =>
         {
             await semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+
             try
             {
                 return await ResolveBackdropItemAsync(item, preferNeutral: false, cancellationToken).ConfigureAwait(false);
@@ -74,13 +85,15 @@ public class TmdbBackdropService
         });
 
         BackdropBatchItemDto?[] resolved = await Task.WhenAll(tasks).ConfigureAwait(false);
-        return resolved
-            .Where(item => item != null && !string.IsNullOrEmpty(item.BackdropUrl))
-            .Cast<BackdropBatchItemDto>()
-            .ToList();
+
+        return resolved.Where(item => item != null && !string.IsNullOrEmpty(item.BackdropUrl)).Cast<BackdropBatchItemDto>().ToList();
     }
 
-    private async Task<BackdropBatchItemDto?> ResolveBackdropItemAsync(BackdropBatchRequestItemDto item, bool preferNeutral, CancellationToken cancellationToken)
+    private async Task<BackdropBatchItemDto?> ResolveBackdropItemAsync(
+        BackdropBatchRequestItemDto item,
+        bool preferNeutral,
+        CancellationToken cancellationToken
+    )
     {
         string mediaType = item.MediaType.ToLowerInvariant();
         int tmdbId = item.TmdbId;
@@ -101,16 +114,18 @@ public class TmdbBackdropService
             return ToBatchItem(mediaType, tmdbId, cached);
         }
 
-        BackdropPickResult pick = await TmdbBackdropHelper.FetchBackdropAsync(
-            _httpClient,
-            mediaType,
-            tmdbId,
-            apiKey,
-            tmdbSettings.BackdropLanguageFilter,
-            preferOriginalLanguage: !preferNeutral && tmdbSettings.PreferOriginalLanguageImages,
-            preferNeutral: preferNeutral,
-            cancellationToken).ConfigureAwait(false);
-
+        BackdropPickResult pick = await TmdbBackdropHelper
+            .FetchBackdropAsync(
+                _httpClient,
+                mediaType,
+                tmdbId,
+                apiKey,
+                tmdbSettings.BackdropLanguageFilter,
+                preferOriginalLanguage: !preferNeutral && tmdbSettings.PreferOriginalLanguageImages,
+                preferNeutral: preferNeutral,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         if (string.IsNullOrEmpty(pick.FilePath))
         {
             return null;
@@ -120,19 +135,14 @@ public class TmdbBackdropService
         string backdropSize = string.IsNullOrWhiteSpace(tmdbSettings.BackdropImageSize) ? "w780" : tmdbSettings.BackdropImageSize;
         string sourceUrl = $"https://image.tmdb.org/t/p/{backdropSize}{path}";
         string backdropUrl = ImageCacheHelper.GetCachedImageUrl(_imageCacheService, sourceUrl, _logger);
-
         if (string.IsNullOrEmpty(backdropUrl))
         {
             return null;
         }
 
-        var dto = new CachedBackdropDto
-        {
-            BackdropUrl = backdropUrl,
-            TmdbBackdropPath = path,
-            HasEnglishBackdrop = pick.HasEnglishBackdrop
-        };
+        var dto = new CachedBackdropDto { BackdropUrl = backdropUrl, TmdbBackdropPath = path, HasEnglishBackdrop = pick.HasEnglishBackdrop };
         _cache[cacheKey] = dto;
+
         return ToBatchItem(mediaType, tmdbId, dto);
     }
 
@@ -146,6 +156,7 @@ public class TmdbBackdropService
         if (string.IsNullOrEmpty(cached.TmdbBackdropPath))
         {
             _cache.TryRemove(cacheKey, out _);
+
             return null;
         }
 
@@ -163,6 +174,7 @@ public class TmdbBackdropService
         }
 
         _cache.TryRemove(cacheKey, out _);
+
         return null;
     }
 

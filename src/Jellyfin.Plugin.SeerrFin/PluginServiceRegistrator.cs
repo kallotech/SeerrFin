@@ -10,23 +10,31 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator
     public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
     {
         serviceCollection.AddHttpClient();
-        serviceCollection.AddHttpClient(JellyseerrAppService.ClientName).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-        {
-            AllowAutoRedirect = false, UseCookies = false, AutomaticDecompression = System.Net.DecompressionMethods.All
-        });
+        serviceCollection.AddHttpClient(JellyseerrAppService.ClientName)
+            .ConfigurePrimaryHttpMessageHandler(() =>
+                new HttpClientHandler
+                {
+                    AllowAutoRedirect = false,
+                    UseCookies = false,
+                    AutomaticDecompression = System.Net.DecompressionMethods.All
+                }
+            );
         serviceCollection.AddSingleton<ImageCacheService>(services =>
         {
             IHttpClientFactory httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
+
             return ActivatorUtilities.CreateInstance<ImageCacheService>(services, httpClientFactory.CreateClient());
         });
         serviceCollection.AddSingleton<TmdbBackdropService>(services =>
         {
             IHttpClientFactory httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
+
             return ActivatorUtilities.CreateInstance<TmdbBackdropService>(services, httpClientFactory.CreateClient());
         });
         serviceCollection.AddSingleton<JustWatchQualitiesService>(services =>
         {
             IHttpClientFactory httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
+
             return ActivatorUtilities.CreateInstance<JustWatchQualitiesService>(services, httpClientFactory.CreateClient());
         });
         serviceCollection.AddSingleton<JellyseerrDiscoveryService>();

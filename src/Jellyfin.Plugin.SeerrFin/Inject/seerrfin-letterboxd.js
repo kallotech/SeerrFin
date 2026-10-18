@@ -21,11 +21,9 @@ window.seerrFinLog = window.seerrFinLog || {
 };
 
 (function () {
-    if (window.__seerrFinLetterboxdInit) {
-        return;
-    }
-    window.__seerrFinLetterboxdInit = true;
+    if (window.__seerrFinLetterboxdInit) { return; }
 
+    window.__seerrFinLetterboxdInit = true;
     const log = window.seerrFinLog;
     const DEFAULT_USERNAME_PATTERN = '^[a-zA-Z0-9_-]{1,30}$';
 
@@ -52,9 +50,11 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function bindBulkModalEvents() {
         const root = state.bulkRoot;
+
         if (!root || root.dataset.seerrfinBulkBound === 'true') {
             return;
         }
+
         root.dataset.seerrfinBulkBound = 'true';
 
         root.addEventListener('click', function (event) {
@@ -62,10 +62,12 @@ window.seerrFinLog = window.seerrFinLog || {
                 if (!state.requesting) {
                     closeBulkModal();
                 }
+
                 return;
             }
 
             const doneBtn = event.target.closest('[data-bulk-done]');
+
             if (doneBtn) {
                 closeBulkModal();
                 return;
@@ -85,6 +87,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function getUsernamePattern() {
         const pattern = getLetterboxdAdvanced().usernamePattern || DEFAULT_USERNAME_PATTERN;
+
         try {
             return new RegExp(pattern);
         } catch (err) {
@@ -95,10 +98,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function getCardOptions() {
         const settings = getLetterboxdAdvanced();
-        return {
-            interactive: settings.requestCardsInteractive === true,
-            includeMetaText: settings.requestCardsIncludeMetaText !== false
-        };
+        return { interactive: settings.requestCardsInteractive === true, includeMetaText: settings.requestCardsIncludeMetaText !== false };
     }
 
     function getDefaultBulkQualityMode() {
@@ -111,53 +111,49 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function findActiveContainer() {
         const all = document.querySelectorAll('.seerrfin-letterboxd-sections');
+
         for (let i = all.length - 1; i >= 0; i--) {
             const container = all[i];
-            if (!container.isConnected) {
-                continue;
-            }
+
+            if (!container.isConnected) { continue; }
 
             const page = container.closest('.page');
+
             if (page && page.classList.contains('hide')) {
                 continue;
             }
 
             const tabPanel = container.closest('.tabContent, .pageTabContent');
+
             if (tabPanel && tabPanel.classList.contains('hide')) {
                 continue;
             }
 
-            if (container.offsetParent !== null) {
-                return container;
-            }
+            if (container.offsetParent !== null) { return container; }
         }
 
         return all.length ? all[all.length - 1] : null;
     }
 
     function formatDate(value) {
-        if (!value) {
-            return 'Never';
-        }
+        if (!value) { return 'Never'; }
 
         const date = new Date(value);
-        if (Number.isNaN(date.getTime())) {
-            return 'Unknown';
-        }
+
+        if (Number.isNaN(date.getTime())) { return 'Unknown'; }
 
         return date.toLocaleString();
     }
 
     function getSyncButtonLabel() {
-        if (state.syncing) {
-            return state.syncProgressPercent + '%';
-        }
+        if (state.syncing) { return state.syncProgressPercent + '%'; }
 
         return state.items.length > 0 ? 'Refresh watchlist' : 'Get watchlist';
     }
 
     function updateSyncButton(container) {
         const button = container.querySelector('[data-sync-submit]');
+
         if (button) {
             button.textContent = getSyncButtonLabel();
         }
@@ -171,25 +167,19 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function pollSyncProgress(container) {
-        ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/letterboxd/sync/progress'),
-            type: 'GET',
-            dataType: 'json'
-        }).then(function (result) {
+        ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/letterboxd/sync/progress'), type: 'GET', dataType: 'json' }).then(function (result) {
             const raw = result?.percent ?? result?.Percent ?? 0;
             const percent = typeof raw === 'number' ? raw : parseInt(raw, 10);
-            if (Number.isNaN(percent)) {
-                return;
-            }
+
+            if (Number.isNaN(percent)) { return; }
 
             const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+
             if (clamped !== state.syncProgressPercent) {
                 state.syncProgressPercent = clamped;
                 updateSyncButton(container);
             }
-        }).catch(function (err) {
-            log.warn('Letterboxd sync progress poll failed', err);
-        });
+        }).catch(function (err) { log.warn('Letterboxd sync progress poll failed', err); });
     }
 
     function startSyncProgressPolling(container) {
@@ -197,9 +187,7 @@ window.seerrFinLog = window.seerrFinLog || {
         state.syncProgressPercent = 0;
         updateSyncButton(container);
         pollSyncProgress(container);
-        state.syncProgressPollTimer = setInterval(function () {
-            pollSyncProgress(container);
-        }, 400);
+        state.syncProgressPollTimer = setInterval(function () { pollSyncProgress(container); }, 400);
     }
 
     function syncWatchlist(username) {
@@ -216,6 +204,7 @@ window.seerrFinLog = window.seerrFinLog || {
                 lastSynced: new Date().toISOString(),
                 lastError: null
             };
+
             return result;
         });
     }
@@ -239,21 +228,20 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function setRequestingUi(container, requesting) {
         state.requesting = requesting;
-
         const input = container.querySelector('#seerrfin-letterboxd-username');
         const syncBtn = container.querySelector('[data-sync-submit]');
+
         if (input) {
             input.disabled = requesting || state.syncing;
         }
+
         if (syncBtn) {
             syncBtn.disabled = requesting || state.syncing;
         }
 
-        container.querySelectorAll('[data-select-all], [data-select-none]').forEach(function (button) {
-            button.disabled = requesting;
-        });
-
+        container.querySelectorAll('[data-select-all], [data-select-none]').forEach(function (button) { button.disabled = requesting; });
         const actionbar = container.querySelector('.seerrfin-letterboxd-actionbar');
+
         if (actionbar) {
             actionbar.classList.toggle('seerrfin-letterboxd-disabled', requesting);
         }
@@ -264,6 +252,7 @@ window.seerrFinLog = window.seerrFinLog || {
     function getBulkQualityLabel(item) {
         const profileName = item.profileName || item.ProfileName || '';
         const qualityLabel = item.qualityLabel || item.QualityLabel || '';
+
         if (profileName && qualityLabel && profileName !== qualityLabel) {
             return qualityLabel + ' · ' + profileName;
         }
@@ -272,15 +261,9 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function getBulkStatusLabel(status) {
-        if (status === 'requested') {
-            return 'Requested';
-        }
-        if (status === 'skipped') {
-            return 'Already requested';
-        }
-        if (status === 'failed') {
-            return 'Failed';
-        }
+        if (status === 'requested') { return 'Requested'; }
+        if (status === 'skipped') { return 'Already requested'; }
+        if (status === 'failed') { return 'Failed'; }
 
         return 'Waiting';
     }
@@ -288,11 +271,13 @@ window.seerrFinLog = window.seerrFinLog || {
     function setBulkModalLocked(locked) {
         const closeBtn = state.bulkRoot?.querySelector('.bst-quality-close');
         const backdrop = state.bulkRoot?.querySelector('.bst-quality-backdrop');
+
         if (closeBtn) {
             closeBtn.disabled = locked;
             closeBtn.style.opacity = locked ? '0.4' : '';
             closeBtn.style.cursor = locked ? 'default' : '';
         }
+
         if (backdrop) {
             backdrop.style.pointerEvents = locked ? 'none' : '';
         }
@@ -302,13 +287,14 @@ window.seerrFinLog = window.seerrFinLog || {
         const tmdbIds = payload.TmdbIds || [];
         panel.classList.add('bst-letterboxd-bulk-panel');
         const header = panel.querySelector('.bst-quality-header h3');
+
         if (header) {
             header.textContent = 'Requesting movies';
         }
 
         setBulkModalLocked(true);
-
         let subtitle = '';
+
         if (payload.QualityMode === 'singleProfile' && payload.ProfileName) {
             subtitle = 'Profile: ' + payload.ProfileName;
         } else if (payload.QualityMode === 'highestAvailable') {
@@ -318,13 +304,12 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         const list = panel.querySelector('.bst-quality-list');
-        if (!list) {
-            return;
-        }
+
+        if (!list) { return; }
 
         list.innerHTML = renderBulkProgress(subtitle, tmdbIds);
-
         const doneBtn = list.querySelector('[data-bulk-done]');
+
         if (doneBtn) {
             doneBtn.addEventListener('click', closeBulkModal);
         }
@@ -340,7 +325,8 @@ window.seerrFinLog = window.seerrFinLog || {
                         <span class="bst-letterboxd-bulk-item-quality" data-bulk-quality></span>
                     </div>
                     <span class="bst-letterboxd-bulk-item-status" data-bulk-status>Waiting</span>
-                </div>`;
+                </div>
+            `;
         }).join('');
 
         return `
@@ -357,26 +343,25 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function updateBulkItemRow(panel, item) {
         const tmdbId = parseInt(item.tmdbId || item.TmdbId, 10);
-        if (Number.isNaN(tmdbId)) {
-            return;
-        }
+
+        if (Number.isNaN(tmdbId)) { return; }
 
         const row = panel.querySelector('[data-bulk-item][data-tmdb-id="' + tmdbId + '"]');
-        if (!row) {
-            return;
-        }
+
+        if (!row) { return; }
 
         const status = (item.status || item.Status || '').toLowerCase();
         row.classList.remove('is-active');
         row.classList.remove('is-requested', 'is-skipped', 'is-failed', 'is-waiting');
         row.classList.add('is-' + status);
-
         const qualityEl = row.querySelector('[data-bulk-quality]');
+
         if (qualityEl) {
             qualityEl.textContent = getBulkQualityLabel(item);
         }
 
         const statusEl = row.querySelector('[data-bulk-status]');
+
         if (statusEl) {
             statusEl.textContent = getBulkStatusLabel(status);
         }
@@ -384,22 +369,22 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function updateBulkRequestProgressModal(container, progress) {
         const panel = state.bulkRoot?.querySelector('.bst-quality-panel');
-        if (!panel) {
-            return;
-        }
+
+        if (!panel) { return; }
 
         const done = progress?.done ?? progress?.Done ?? 0;
         const total = progress?.total ?? progress?.Total ?? 0;
         const percent = progress?.percent ?? progress?.Percent ?? 0;
         const currentId = progress?.currentTmdbId ?? progress?.CurrentTmdbId ?? null;
         const completed = progress?.completed || progress?.Completed || [];
-
         const fill = panel.querySelector('[data-bulk-progress-fill]');
+
         if (fill) {
             fill.style.width = Math.max(0, Math.min(100, percent)) + '%';
         }
 
         const countEl = panel.querySelector('[data-bulk-progress-count]');
+
         if (countEl) {
             countEl.textContent = done + ' of ' + total;
         }
@@ -407,6 +392,7 @@ window.seerrFinLog = window.seerrFinLog || {
         panel.querySelectorAll('[data-bulk-item].is-active').forEach(function (row) {
             row.classList.remove('is-active');
             const statusEl = row.querySelector('[data-bulk-status]');
+
             if (statusEl && statusEl.textContent === 'Requesting…') {
                 statusEl.textContent = 'Waiting';
             }
@@ -416,9 +402,9 @@ window.seerrFinLog = window.seerrFinLog || {
         for (let i = state.requestProgressAppliedCount; i < completed.length; i++) {
             const item = completed[i];
             updateBulkItemRow(panel, item);
-
             const tmdbId = parseInt(item.tmdbId || item.TmdbId, 10);
             const status = (item.status || item.Status || '').toLowerCase();
+
             if (!Number.isNaN(tmdbId)) {
                 applyRequestResultToCard(container, tmdbId, status);
             }
@@ -429,11 +415,13 @@ window.seerrFinLog = window.seerrFinLog || {
 
         if (currentId && done < total) {
             const row = panel.querySelector('[data-bulk-item][data-tmdb-id="' + currentId + '"]');
+
             if (row && !row.classList.contains('is-requested') &&
                 !row.classList.contains('is-skipped') &&
                 !row.classList.contains('is-failed')) {
                 row.classList.add('is-active');
                 const statusEl = row.querySelector('[data-bulk-status]');
+
                 if (statusEl) {
                     statusEl.textContent = 'Requesting…';
                 }
@@ -443,20 +431,23 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function showBulkRequestComplete(panel, requested, skipped, failed) {
         const header = panel.querySelector('.bst-quality-header h3');
+
         if (header) {
             header.textContent = 'Requests complete';
         }
 
         setBulkModalLocked(false);
-
         const fill = panel.querySelector('[data-bulk-progress-fill]');
+
         if (fill) {
             fill.style.width = '100%';
         }
 
         let subtitle = panel.querySelector('.bst-letterboxd-bulk-subtitle');
+
         if (!subtitle) {
             const list = panel.querySelector('.bst-quality-list');
+
             if (list) {
                 list.insertAdjacentHTML('afterbegin', `<div class="bst-letterboxd-bulk-subtitle"></div>`);
                 subtitle = list.querySelector('.bst-letterboxd-bulk-subtitle');
@@ -468,6 +459,7 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         const footer = panel.querySelector('[data-bulk-footer]');
+
         if (footer) {
             footer.hidden = false;
         }
@@ -475,15 +467,17 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function showBulkRequestError(panel, message) {
         const header = panel.querySelector('.bst-quality-header h3');
+
         if (header) {
             header.textContent = 'Request failed';
         }
 
         setBulkModalLocked(false);
-
         let subtitle = panel.querySelector('.bst-letterboxd-bulk-subtitle');
+
         if (!subtitle) {
             const list = panel.querySelector('.bst-quality-list');
+
             if (list) {
                 list.insertAdjacentHTML('afterbegin', `<div class="bst-letterboxd-bulk-subtitle bst-letterboxd-bulk-subtitle--error"></div>`);
                 subtitle = list.querySelector('.bst-letterboxd-bulk-subtitle');
@@ -495,6 +489,7 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         const footer = panel.querySelector('[data-bulk-footer]');
+
         if (footer) {
             footer.hidden = false;
         }
@@ -502,9 +497,8 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function applyRequestResultToCard(container, tmdbId, status) {
         const card = container.querySelector('.seerrfin-discover-card[data-tmdb-id="' + tmdbId + '"]');
-        if (!card) {
-            return;
-        }
+
+        if (!card) { return; }
 
         if (status === 'requested' || status === 'skipped') {
             state.requestedIds.add(tmdbId);
@@ -516,13 +510,16 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function applyCompletedResults(container, completed, fromIndex) {
         const panel = state.bulkRoot?.querySelector('.bst-quality-panel');
+
         for (let i = fromIndex; i < completed.length; i++) {
             const item = completed[i];
             const tmdbId = parseInt(item.tmdbId || item.TmdbId, 10);
             const status = (item.status || item.Status || '').toLowerCase();
+
             if (panel) {
                 updateBulkItemRow(panel, item);
             }
+
             if (!Number.isNaN(tmdbId)) {
                 applyRequestResultToCard(container, tmdbId, status);
             }
@@ -533,34 +530,26 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function pollRequestProgress(container) {
-        ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/letterboxd/request/progress'),
-            type: 'GET',
-            dataType: 'json'
-        }).then(function (result) {
+        ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/letterboxd/request/progress'), type: 'GET', dataType: 'json' }).then(function (result) {
             const isActive = result?.isActive ?? result?.IsActive ?? false;
-            if (!isActive) {
-                return;
-            }
+
+            if (!isActive) { return; }
 
             updateBulkRequestProgressModal(container, result);
-        }).catch(function (err) {
-            log.warn('Letterboxd request progress poll failed', err);
-        });
+        }).catch(function (err) { log.warn('Letterboxd request progress poll failed', err); });
     }
 
     function startRequestProgressPolling(container) {
         stopRequestProgressPolling();
         state.requestProgressAppliedCount = 0;
         pollRequestProgress(container);
-        state.requestProgressPollTimer = setInterval(function () {
-            pollRequestProgress(container);
-        }, 400);
+        state.requestProgressPollTimer = setInterval(function () { pollRequestProgress(container); }, 400);
     }
 
     function mapItemToDiscover(item) {
         const providerIds = item.ProviderIds || item.providerIds || {};
         const premiereDate = item.PremiereDate || item.premiereDate || null;
+
         return {
             Id: providerIds.Tmdb || providerIds.tmdb,
             Name: item.Name || item.name,
@@ -575,22 +564,27 @@ window.seerrFinLog = window.seerrFinLog || {
         const providerIds = item.ProviderIds || item.providerIds || {};
         const raw = providerIds.Tmdb || providerIds.tmdb || item.Id || item.id;
         const parsed = parseInt(raw, 10);
+
         return Number.isNaN(parsed) ? null : parsed;
     }
 
     function updatePanelErrorBar(container, message) {
         let errorEl = container.querySelector('.seerrfin-letterboxd-error');
+
         if (message) {
             if (!errorEl) {
                 const help = container.querySelector('.seerrfin-letterboxd-help');
+
                 if (help) {
                     help.insertAdjacentHTML('afterend', `<div class="seerrfin-letterboxd-error"></div>`);
                     errorEl = container.querySelector('.seerrfin-letterboxd-error');
                 }
             }
+
             if (errorEl) {
                 errorEl.textContent = message;
             }
+
             return;
         }
 
@@ -609,20 +603,21 @@ window.seerrFinLog = window.seerrFinLog || {
         const showToolbar = hasWatchlist && !state.syncing;
         const selectedCount = state.selectedIds.size;
         const disabledAttr = state.syncing || state.requesting ? ' disabled' : '';
-
         const errorHtml = lastError ? `<div class="seerrfin-letterboxd-error">${escapeHtml(lastError)}</div>` : '';
-
         let metaHtml = '';
+
         if (state.syncing) {
             metaHtml = `<div class="seerrfin-loading-row">Loading watchlist…</div>`;
         } else if (lastSynced || hasWatchlist) {
             const unresolvedHtml = unresolvedCount ? `<span>Unresolved: <strong>${escapeHtml(String(unresolvedCount))}</strong></span>` : '';
+
             metaHtml = `
                 <div class="seerrfin-letterboxd-meta">
                     <span>Last synced: <strong>${escapeHtml(formatDate(lastSynced))}</strong></span>
                     <span>Gotten: <strong>${escapeHtml(String(resolvedCount))}</strong></span>
                     ${unresolvedHtml}
-                </div>`;
+                </div>
+            `;
         }
 
         const toolbarHtml = showToolbar ? `
@@ -633,12 +628,14 @@ window.seerrFinLog = window.seerrFinLog || {
                 </div>
                 <span class="seerrfin-letterboxd-toolbar-separator" aria-hidden="true"></span>
                 <span class="seerrfin-letterboxd-selected-count" data-selected-count>${selectedCount} selected</span>
-            </div>` : '';
+            </div>
+        ` : '';
 
         const actionbarHtml = showToolbar ? `
             <div class="seerrfin-letterboxd-actionbar${state.requesting ? ' seerrfin-letterboxd-disabled' : ''}">
                 <button type="button" data-request-selected${selectedCount === 0 || state.requesting ? ' disabled' : ''}>Request selected</button>
-            </div>` : '';
+            </div>
+        ` : '';
 
         return `
             <div class="verticalSection seerrfin-letterboxd-panel padded-left padded-right">
@@ -661,14 +658,15 @@ window.seerrFinLog = window.seerrFinLog || {
                 ${toolbarHtml}
                 <div class="seerrfin-letterboxd-body"></div>
                 ${actionbarHtml}
-            </div>`;
+            </div>
+        `;
     }
 
     function renderPanel(container) {
         container.innerHTML = renderLetterboxdPanel();
         renderGrid(container);
-
         const form = container.querySelector('[data-letterboxd-form]');
+
         if (form) {
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
@@ -679,9 +677,8 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function renderGrid(container) {
         const body = container.querySelector('.seerrfin-letterboxd-body');
-        if (!body) {
-            return;
-        }
+
+        if (!body) { return; }
 
         if (state.syncing) {
             body.innerHTML = '';
@@ -694,6 +691,7 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         const plugin = getPlugin();
+
         if (!plugin || typeof plugin.createDiscoverCards !== 'function') {
             body.innerHTML = '';
             updatePanelErrorBar(container, 'Plugin cards are not ready yet.');
@@ -703,9 +701,7 @@ window.seerrFinLog = window.seerrFinLog || {
         updatePanelErrorBar(container, state.syncMeta?.lastError || null);
 
         const renderCards = function () {
-            const useBackdrop = typeof plugin.shouldUseBackdropThumbnails === 'function'
-                ? plugin.shouldUseBackdropThumbnails()
-                : false;
+            const useBackdrop = typeof plugin.shouldUseBackdropThumbnails === 'function' ? plugin.shouldUseBackdropThumbnails() : false;
             const cardOptions = Object.assign({}, getCardOptions(), {
                 forceBackdrop: useBackdrop,
                 letterboxdSlot: true,
@@ -713,16 +709,16 @@ window.seerrFinLog = window.seerrFinLog || {
                     return state.selectedIds.has(tmdbId);
                 }
             });
-            const discoverItems = state.items.map(mapItemToDiscover).filter(function (item) {
-                return item.Id;
-            });
+            const discoverItems = state.items.map(mapItemToDiscover).filter(function (item) { return item.Id; });
             const cardsHtml = plugin.createDiscoverCards(discoverItems, true, cardOptions);
+
             body.innerHTML = `
                 <div class="seerrfin-grid-view">
                     <div class="seerrfin-letterboxd-grid seerrfin-letterboxd-grid--${useBackdrop ? 'landscape' : 'portrait'}">
                         ${cardsHtml}
                     </div>
-                </div>`;
+                </div>
+            `;
 
             if (useBackdrop && typeof plugin.hydrateDiscoverBackdropCards === 'function') {
                 plugin.hydrateDiscoverBackdropCards(body);
@@ -743,34 +739,33 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function toggleSelection(tmdbId, selected, container) {
-        if (state.requesting) {
-            return;
-        }
+        if (state.requesting) { return; }
 
         if (selected) {
             state.selectedIds.add(tmdbId);
         } else {
             state.selectedIds.delete(tmdbId);
         }
+
         updateSelectionUi(container);
     }
 
     function updateSelectionUi(container) {
         const selectedCount = state.selectedIds.size;
         const countEl = container.querySelector('[data-selected-count]');
+
         if (countEl) {
             countEl.textContent = selectedCount + ' selected';
         }
 
         const requestBtn = container.querySelector('[data-request-selected]');
+
         if (requestBtn) {
             requestBtn.disabled = selectedCount === 0 || state.requesting;
         }
 
         container.querySelectorAll('.seerrfin-discover-card.seerrfin-letterboxd-card').forEach(function (card) {
-            if (!card) {
-                return;
-            }
+            if (!card) { return; }
 
             const tmdbId = parseInt(card.getAttribute('data-tmdb-id'), 10);
             const isSelected = state.selectedIds.has(tmdbId);
@@ -780,12 +775,11 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function selectAll(container) {
-        if (state.requesting) {
-            return;
-        }
+        if (state.requesting) { return; }
 
         state.items.forEach(function (item) {
             const tmdbId = getTmdbId(item);
+
             if (tmdbId != null && !state.requestedIds.has(tmdbId)) {
                 state.selectedIds.add(tmdbId);
             }
@@ -794,9 +788,7 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function selectNone(container) {
-        if (state.requesting) {
-            return;
-        }
+        if (state.requesting) { return; }
 
         state.selectedIds.clear();
         updateSelectionUi(container);
@@ -809,10 +801,9 @@ window.seerrFinLog = window.seerrFinLog || {
     function handleSync(container) {
         const input = container.querySelector('#seerrfin-letterboxd-username');
         const username = input ? input.value.trim() : state.username.trim();
+
         if (!validateUsername(username)) {
-            state.syncMeta = Object.assign({}, state.syncMeta || {}, {
-                lastError: 'Enter a valid Letterboxd username.'
-            });
+            state.syncMeta = Object.assign({}, state.syncMeta || {}, { lastError: 'Enter a valid Letterboxd username.' });
             updatePanelErrorBar(container, state.syncMeta.lastError);
             return;
         }
@@ -824,10 +815,7 @@ window.seerrFinLog = window.seerrFinLog || {
         renderPanel(container);
         startSyncProgressPolling(container);
 
-        syncWatchlist(username)
-            .then(function () {
-                state.selectedIds.clear();
-            })
+        syncWatchlist(username).then(function () { state.selectedIds.clear(); })
             .catch(function (err) {
                 log.error('Letterboxd sync failed', err);
                 const message = err?.responseJSON?.message || 'Could not sync Letterboxd watchlist.';
@@ -859,12 +847,12 @@ window.seerrFinLog = window.seerrFinLog || {
                     </div>
                     <div class="bst-quality-list"></div>
                 </div>
-            </div>`;
+            </div>
+        `;
     }
 
     function createBulkModalShell(title) {
         closeBulkModal();
-
         document.body.insertAdjacentHTML('beforeend', renderBulkModalShell(title));
         state.bulkRoot = document.body.lastElementChild;
         bindBulkModalEvents();
@@ -878,18 +866,16 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function mergeAlreadyRequestedIds(apiIds, selectedIds) {
         const merged = new Set();
+
         // Mix server state with ids requested during this page session.
-        (apiIds || []).forEach(function (id) {
-            merged.add(parseInt(id, 10));
-        });
+        (apiIds || []).forEach(function (id) { merged.add(parseInt(id, 10)); });
         selectedIds.forEach(function (id) {
             if (state.requestedIds.has(id)) {
                 merged.add(id);
             }
         });
-        return Array.from(merged).filter(function (id) {
-            return !Number.isNaN(id);
-        });
+
+        return Array.from(merged).filter(function (id) { return !Number.isNaN(id); });
     }
 
     function checkAlreadyRequested(tmdbIds) {
@@ -906,9 +892,7 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function removeSelectedIds(tmdbIds) {
-        tmdbIds.forEach(function (id) {
-            state.selectedIds.delete(id);
-        });
+        tmdbIds.forEach(function (id) { state.selectedIds.delete(id); });
     }
 
     function renderQualitySelection() {
@@ -925,34 +909,33 @@ window.seerrFinLog = window.seerrFinLog || {
                 Most common quality for each
                 <span class="bst-quality-option-sub">Use the most common streaming quality recommendation per movie.</span>
             </button>
-            <div data-profile-list hidden></div>`;
+            <div data-profile-list hidden></div>
+        `;
     }
 
     function showQualitySelection(panel, container, tmdbIds) {
-        if (!tmdbIds.length) {
-            return;
-        }
+        if (!tmdbIds.length) { return; }
 
         panel.classList.remove('bst-letterboxd-bulk-panel');
         const header = panel.querySelector('.bst-quality-header h3');
+
         if (header) {
             header.textContent = 'Request selected movies';
         }
 
         const list = panel.querySelector('.bst-quality-list');
-        if (!list) {
-            return;
-        }
+
+        if (!list) { return; }
 
         list.innerHTML = renderQualitySelection();
 
         list.addEventListener('click', function onQualityClick(event) {
             const button = event.target.closest('[data-quality-mode]');
-            if (!button) {
-                return;
-            }
+
+            if (!button) { return; }
 
             const mode = button.getAttribute('data-quality-mode');
+
             if (mode === 'singleProfile') {
                 list.removeEventListener('click', onQualityClick);
                 showProfilePicker(panel, container, tmdbIds);
@@ -960,10 +943,7 @@ window.seerrFinLog = window.seerrFinLog || {
             }
 
             list.removeEventListener('click', onQualityClick);
-            submitBulkRequest(container, {
-                QualityMode: mode,
-                TmdbIds: tmdbIds.slice()
-            }, panel);
+            submitBulkRequest(container, { QualityMode: mode, TmdbIds: tmdbIds.slice() }, panel);
         });
     }
 
@@ -981,7 +961,8 @@ window.seerrFinLog = window.seerrFinLog || {
                         <span class="bst-letterboxd-bulk-item-title">${escapeHtml(getItemTitle(id) || 'Movie')}</span>
                     </div>
                     <span class="bst-letterboxd-bulk-item-status">Already requested</span>
-                </div>`;
+                </div>
+            `;
         }).join('');
 
         return `
@@ -997,29 +978,27 @@ window.seerrFinLog = window.seerrFinLog || {
                 Request all anyway
                 <span class="bst-quality-option-sub">Include already requested movies in this batch.</span>
             </button>
-            <button type="button" class="bst-quality-option bst-letterboxd-bulk-cancel" data-cancel-request>Cancel</button>`;
+            <button type="button" class="bst-quality-option bst-letterboxd-bulk-cancel" data-cancel-request>Cancel</button>
+        `;
     }
 
     function showAlreadyRequestedPrompt(panel, container, alreadyRequestedIds, selectedIds) {
         const header = panel.querySelector('.bst-quality-header h3');
+
         if (header) {
             header.textContent = 'Already requested';
         }
 
         const list = panel.querySelector('.bst-quality-list');
-        if (!list) {
-            return;
-        }
+
+        if (!list) { return; }
 
         list.innerHTML = renderAlreadyRequestedPrompt(alreadyRequestedIds, selectedIds);
 
         list.addEventListener('click', function onPromptClick(event) {
             if (event.target.closest('[data-skip-requested]')) {
                 list.removeEventListener('click', onPromptClick);
-                const remaining = selectedIds.filter(function (id) {
-                    return alreadyRequestedIds.indexOf(id) === -1;
-                });
-
+                const remaining = selectedIds.filter(function (id) { return alreadyRequestedIds.indexOf(id) === -1; });
                 removeSelectedIds(alreadyRequestedIds);
                 updateSelectionUi(container);
 
@@ -1029,6 +1008,7 @@ window.seerrFinLog = window.seerrFinLog || {
                 }
 
                 continueBulkRequest(panel, container, remaining);
+
                 return;
             }
 
@@ -1047,11 +1027,11 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function normalizeRequestOptionsPayload(data) {
         const raw = (data && (data.options || data.Options)) || [];
+
         return {
             options: (Array.isArray(raw) ? raw : []).map(function (opt) {
-                if (!opt) {
-                    return null;
-                }
+                if (!opt) { return null; }
+
                 return {
                     serverId: opt.serverId != null ? opt.serverId : opt.ServerId,
                     serverName: opt.serverName || opt.ServerName || '',
@@ -1067,12 +1047,9 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function continueBulkRequest(panel, container, tmdbIds) {
-        ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/request-options/movie'),
-            type: 'GET',
-            dataType: 'json'
-        }).then(function (data) {
+        ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/request-options/movie'), type: 'GET', dataType: 'json' }).then(function (data) {
             const payload = normalizeRequestOptionsPayload(data);
+
             if (!payload.canRequest) {
                 showBulkRequestError(panel, 'You do not have permission to make movie requests.');
                 return;
@@ -1080,20 +1057,17 @@ window.seerrFinLog = window.seerrFinLog || {
 
             // if no advanced permission / no profiles use Seerr defaults (no picker)
             if (!payload.canRequestAdvanced || !payload.options.length) {
-                submitBulkRequest(container, {
-                    TmdbIds: tmdbIds.slice()
-                }, panel);
+                submitBulkRequest(container, { TmdbIds: tmdbIds.slice() }, panel);
                 return;
             }
 
             const defaultMode = getDefaultBulkQualityMode();
+
             if (defaultMode === 'highestAvailable' || defaultMode === 'mostCommon') {
-                submitBulkRequest(container, {
-                    QualityMode: defaultMode,
-                    TmdbIds: tmdbIds.slice()
-                }, panel);
+                submitBulkRequest(container, { QualityMode: defaultMode, TmdbIds: tmdbIds.slice() }, panel);
                 return;
             }
+
             showQualitySelection(panel, container, tmdbIds);
         }).catch(function (err) {
             log.error('Letterboxd request options failed', err);
@@ -1103,25 +1077,29 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function handleAlreadyRequested(panel, container, alreadyRequestedIds, selectedIds) {
         const mode = getAlreadyRequestedMode();
+
         if (mode === 'requestAll') {
             continueBulkRequest(panel, container, selectedIds.slice());
             return;
         }
 
         if (mode === 'skip') {
-            const remaining = selectedIds.filter(function (id) {
-                return alreadyRequestedIds.indexOf(id) === -1;
-            });
+            const remaining = selectedIds.filter(function (id) { return alreadyRequestedIds.indexOf(id) === -1; });
             removeSelectedIds(alreadyRequestedIds);
             updateSelectionUi(container);
+
             if (!remaining.length) {
                 const list = panel.querySelector('.bst-quality-list');
+
                 if (list) {
                     list.innerHTML = `<div class="bst-quality-empty">No movies left to request.</div>`;
                 }
+
                 return;
             }
+
             continueBulkRequest(panel, container, remaining);
+
             return;
         }
 
@@ -1130,12 +1108,12 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function openBulkModal(container) {
         const selectedIds = getSelectedTmdbIds();
-        if (!selectedIds.length) {
-            return;
-        }
+
+        if (!selectedIds.length) { return; }
 
         const panel = createBulkModalShell('Checking selections…');
         const list = panel.querySelector('.bst-quality-list');
+
         if (list) {
             list.innerHTML = `<div class="bst-quality-loading">Checking for existing requests…</div>`;
         }
@@ -1151,6 +1129,7 @@ window.seerrFinLog = window.seerrFinLog || {
             })
             .catch(function (err) {
                 log.error('Letterboxd request check failed', err);
+
                 if (list) {
                     list.innerHTML = `<div class="bst-quality-empty">Could not check existing requests.</div>`;
                 }
@@ -1161,38 +1140,39 @@ window.seerrFinLog = window.seerrFinLog || {
         return options.map(function (opt) {
             const label = escapeHtml(opt.profileName || 'Default');
             const subParts = [];
+
             if (opt.serverName) {
                 subParts.push(opt.serverName);
             }
+
             if (opt.is4k) {
                 subParts.push('4K');
             }
+
             const subHtml = subParts.length ? `<span class="bst-quality-option-sub">${escapeHtml(subParts.join(' · '))}</span>` : '';
+
             return `
                 <button type="button" class="bst-quality-option" data-profile-id="${opt.profileId}"
                     data-server-id="${opt.serverId}" data-root-folder="${escapeHtml(opt.rootFolder || '')}"
                     data-is-4k="${opt.is4k ? '1' : '0'}" data-profile-name="${label}">
                     ${label}
                     ${subHtml}
-                </button>`;
+                </button>
+            `;
         }).join('');
     }
 
     function showProfilePicker(panel, container, tmdbIds) {
         const list = panel.querySelector('[data-profile-list]');
-        if (!list) {
-            return;
-        }
+
+        if (!list) { return; }
 
         list.hidden = false;
         list.innerHTML = `<div class="bst-quality-loading">Loading profiles…</div>`;
 
-        ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/request-options/movie'),
-            type: 'GET',
-            dataType: 'json'
-        }).then(function (data) {
+        ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/request-options/movie'), type: 'GET', dataType: 'json' }).then(function (data) {
             const payload = normalizeRequestOptionsPayload(data);
+
             if (!payload.canRequestAdvanced || !payload.options.length) {
                 list.innerHTML = `<div class="bst-quality-empty">No quality profiles available.</div>`;
                 return;
@@ -1202,9 +1182,8 @@ window.seerrFinLog = window.seerrFinLog || {
 
             list.addEventListener('click', function onProfileClick(event) {
                 const button = event.target.closest('[data-profile-id]');
-                if (!button) {
-                    return;
-                }
+
+                if (!button) { return; }
 
                 list.removeEventListener('click', onProfileClick);
                 submitBulkRequest(container, {
@@ -1224,9 +1203,7 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function submitBulkRequest(container, payload, panel) {
-        if (!panel) {
-            return;
-        }
+        if (!panel) { return; }
 
         state.requestProgressAppliedCount = 0;
         setRequestingUi(container, true);
@@ -1244,7 +1221,6 @@ window.seerrFinLog = window.seerrFinLog || {
             const requested = result?.requested || result?.Requested || 0;
             const skipped = result?.skipped || result?.Skipped || 0;
             const failed = result?.failed || result?.Failed || 0;
-
             applyCompletedResults(container, results, state.requestProgressAppliedCount);
             showBulkRequestComplete(panel, requested, skipped, failed);
         }).catch(function (err) {
@@ -1257,34 +1233,40 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function bindContainerEvents(container) {
-        if (container.dataset.seerrfinLetterboxdBound === 'true') {
-            return;
-        }
+        if (container.dataset.seerrfinLetterboxdBound === 'true') { return; }
+
         container.dataset.seerrfinLetterboxdBound = 'true';
 
         container.addEventListener('click', function (event) {
             const card = event.target.closest('.seerrfin-letterboxd-body .seerrfin-discover-card.seerrfin-letterboxd-card');
+
             if (card && !event.target.closest('.seerrfin-request-card-actions')) {
                 const tmdbId = parseInt(card.getAttribute('data-tmdb-id'), 10);
+
                 if (!Number.isNaN(tmdbId) && !state.requesting) {
                     event.preventDefault();
                     event.stopPropagation();
                     toggleSelection(tmdbId, !state.selectedIds.has(tmdbId), container);
                 }
+
                 return;
             }
 
             const modalBtn = event.target.closest('.seerrfin-letterboxd-body .seerrfin-request-modal-btn');
+
             if (modalBtn) {
                 const cardEl = modalBtn.closest('.seerrfin-discover-card');
                 const tmdbId = cardEl ? cardEl.getAttribute('data-tmdb-id') : null;
+
                 if (tmdbId) {
                     event.preventDefault();
                     event.stopPropagation();
+
                     if (window.seerrFinModal && typeof window.seerrFinModal.open === 'function') {
                         window.seerrFinModal.open(String(tmdbId), 'movie');
                     }
                 }
+
                 return;
             }
 
@@ -1302,9 +1284,11 @@ window.seerrFinLog = window.seerrFinLog || {
 
             if (event.target.closest('[data-request-selected]')) {
                 event.preventDefault();
+
                 if (state.selectedIds.size === 0 || state.requesting) {
                     return;
                 }
+
                 openBulkModal(container);
             }
         });
@@ -1313,9 +1297,7 @@ window.seerrFinLog = window.seerrFinLog || {
     function mount(container) {
         bindContainerEvents(container);
 
-        if (container.querySelector('.seerrfin-letterboxd-panel')) {
-            return;
-        }
+        if (container.querySelector('.seerrfin-letterboxd-panel')) { return; }
 
         log.info('adding Letterboxd panel');
         renderPanel(container);
@@ -1323,6 +1305,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function ensureMounted() {
         const container = findActiveContainer();
+
         if (container) {
             mount(container);
         }

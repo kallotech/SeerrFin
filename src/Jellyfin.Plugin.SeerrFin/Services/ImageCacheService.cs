@@ -17,10 +17,7 @@ public class ImageCacheService
     private readonly ConcurrentDictionary<string, CachedImageDto> _imageCache = new();
     private readonly ConcurrentDictionary<string, Task<string?>> _inflightDownloads = new();
 
-    public ImageCacheService(
-        ILogger<ImageCacheService> logger,
-        IApplicationPaths applicationPaths,
-        HttpClient httpClient)
+    public ImageCacheService(ILogger<ImageCacheService> logger, IApplicationPaths applicationPaths, HttpClient httpClient)
     {
         _logger = logger;
         _httpClient = httpClient;
@@ -37,7 +34,6 @@ public class ImageCacheService
         }
 
         string cacheKey = GenerateCacheKey(sourceUrl);
-
         if (IsValidCacheKey(cacheKey))
         {
             return cacheKey;
@@ -68,15 +64,18 @@ public class ImageCacheService
         {
             int cacheTimeout = SeerrFinPlugin.Instance.Configuration.CacheTimeoutSeconds;
             string? refreshedKey = GetOrCacheImage(cachedInfo.SourceUrl, cacheTimeout).GetAwaiter().GetResult();
-            if (refreshedKey == cacheKey
+            if (
+                refreshedKey == cacheKey
                 && _imageCache.TryGetValue(cacheKey, out cachedInfo)
-                && File.Exists(cachedInfo.FilePath))
+                && File.Exists(cachedInfo.FilePath)
+            )
             {
                 return BuildCachedImageFile(cachedInfo);
             }
         }
 
         _imageCache.TryRemove(cacheKey, out _);
+
         return null;
     }
 
@@ -84,7 +83,8 @@ public class ImageCacheService
     {
         Task<string?> downloadTask = _inflightDownloads.GetOrAdd(
             cacheKey,
-            _ => DownloadAndCacheImage(sourceUrl, cacheKey, cacheTimeoutSeconds));
+            _ => DownloadAndCacheImage(sourceUrl, cacheKey, cacheTimeoutSeconds)
+        );
 
         try
         {
@@ -99,8 +99,8 @@ public class ImageCacheService
     private bool IsValidCacheKey(string cacheKey)
     {
         return _imageCache.TryGetValue(cacheKey, out CachedImageDto? cachedInfo)
-               && cachedInfo.ExpiresAt > DateTime.UtcNow
-               && File.Exists(cachedInfo.FilePath);
+            && cachedInfo.ExpiresAt > DateTime.UtcNow
+            && File.Exists(cachedInfo.FilePath);
     }
 
     private async Task<string?> DownloadAndCacheImage(string sourceUrl, string cacheKey, int cacheTimeoutSeconds)
@@ -141,11 +141,13 @@ public class ImageCacheService
                 ExpiresAt = cachedAt.AddSeconds(cacheTimeoutSeconds)
             };
             SaveCacheIndex();
+
             return cacheKey;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "SeerrFin • error caching image from {SourceUrl}", sourceUrl);
+
             return null;
         }
     }
@@ -153,6 +155,7 @@ public class ImageCacheService
     private CachedImageFile BuildCachedImageFile(CachedImageDto cachedInfo)
     {
         DateTime lastModified = cachedInfo.CachedAt;
+
         try
         {
             lastModified = File.GetLastWriteTimeUtc(cachedInfo.FilePath);
@@ -164,6 +167,7 @@ public class ImageCacheService
 
         int maxAgeSeconds = Math.Max(0, (int)Math.Ceiling((cachedInfo.ExpiresAt - DateTime.UtcNow).TotalSeconds));
         long fileLength = 0;
+
         try
         {
             fileLength = new FileInfo(cachedInfo.FilePath).Length;
@@ -206,10 +210,10 @@ public class ImageCacheService
     private void EvictOldEntries()
     {
         int maxEntries = SeerrFinPlugin.Instance.Configuration.MaxImageCacheEntries;
-        foreach (string key in _imageCache.Values
-                     .OrderBy(x => x.CachedAt)
-                     .Take(Math.Max(1, maxEntries / 10))
-                     .Select(x => x.CacheKey))
+
+        foreach (
+            string key in _imageCache.Values.OrderBy(x => x.CachedAt).Take(Math.Max(1, maxEntries / 10)).Select(x => x.CacheKey)
+        )
         {
             CleanupCacheEntry(key);
         }
@@ -264,6 +268,7 @@ public class ImageCacheService
     private static string GenerateCacheKey(string sourceUrl)
     {
         byte[] hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(sourceUrl));
+
         return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 

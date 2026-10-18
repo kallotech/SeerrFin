@@ -25,7 +25,6 @@ window.seerrFinLog = window.seerrFinLog || {
     const TMDB_LOGO_SVG = '<svg width="2em" height="2em" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 190.24 81.52"><defs><linearGradient id="bst-tmdb-grad" y1="40.76" x2="190.24" y2="40.76" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#90cea1"/><stop offset="0.56" stop-color="#3cbec9"/><stop offset="1" stop-color="#00b3e5"/></linearGradient></defs><path fill="url(#bst-tmdb-grad)" d="M105.67,36.06h66.9A17.67,17.67,0,0,0,190.24,18.4h0A17.67,17.67,0,0,0,172.57.73h-66.9A17.67,17.67,0,0,0,88,18.4h0A17.67,17.67,0,0,0,105.67,36.06Zm-88,45h76.9A17.67,17.67,0,0,0,112.24,63.4h0A17.67,17.67,0,0,0,94.57,45.73H17.67A17.67,17.67,0,0,0,0,63.4H0A17.67,17.67,0,0,0,17.67,81.06ZM10.41,35.42h7.8V6.92h10.1V0H.31v6.9h10.1Zm28.1,0h7.8V8.25h.1l9,27.15h6l9.3-27.15h.1V35.4h7.8V0H66.76l-8.2,23.1h-.1L50.31,0H38.51ZM152.43,55.67a15.07,15.07,0,0,0-4.52-5.52,18.57,18.57,0,0,0-6.68-3.08,33.54,33.54,0,0,0-8.07-1h-11.7v35.4h12.75a24.58,24.58,0,0,0,7.55-1.15A19.34,19.34,0,0,0,148.11,77a16.27,16.27,0,0,0,4.37-5.5,16.91,16.91,0,0,0,1.63-7.58A18.5,18.5,0,0,0,152.43,55.67ZM145,68.6A8.8,8.8,0,0,1,142.36,72a10.7,10.7,0,0,1-4,1.82,21.57,21.57,0,0,1-5,.55h-4.05v-21h4.6a17,17,0,0,1,4.67.63,11.66,11.66,0,0,1,3.88,1.87A9.14,9.14,0,0,1,145,59a9.87,9.87,0,0,1,1,4.52A11.89,11.89,0,0,1,145,68.6Zm44.63-.13a8,8,0,0,0-1.58-2.62A8.38,8.38,0,0,0,185.63,64a10.31,10.31,0,0,0-3.17-1v-.1a9.22,9.22,0,0,0,4.42-2.82,7.43,7.43,0,0,0,1.68-5,8.42,8.42,0,0,0-1.15-4.65,8.09,8.09,0,0,0-3-2.72,12.56,12.56,0,0,0-4.18-1.3,32.84,32.84,0,0,0-4.62-.33h-13.2v35.4h14.5a22.41,22.41,0,0,0,4.72-.5,13.53,13.53,0,0,0,4.28-1.65,9.42,9.42,0,0,0,3.1-3,8.52,8.52,0,0,0,1.2-4.68A9.39,9.39,0,0,0,189.66,68.47ZM170.21,52.72h5.3a10,10,0,0,1,1.85.18,6.18,6.18,0,0,1,1.7.57,3.39,3.39,0,0,1,1.22,1.13,3.22,3.22,0,0,1,.48,1.82,3.63,3.63,0,0,1-.43,1.8,3.4,3.4,0,0,1-1.12,1.2,4.92,4.92,0,0,1-1.58.65,7.51,7.51,0,0,1-1.77.2h-5.65Zm11.72,20a3.9,3.9,0,0,1-1.22,1.3,4.64,4.64,0,0,1-1.68.7,8.18,8.18,0,0,1-1.82.2h-7v-8h5.9a15.35,15.35,0,0,1,2,.15,8.47,8.47,0,0,1,2.05.55,4,4,0,0,1,1.57,1.18,3.11,3.11,0,0,1,.63,2A3.71,3.71,0,0,1,181.93,72.72Z"/></svg>';
     const CLOSE_ICON = '<span class="material-icons close" aria-hidden="true"></span>';
     const IMDB_ICON = '<svg width="2em" height="2em" fill="currentColor" viewBox="0 0 32 32"><path d="M8.4,21.1H5.9V9.9h3.8l0.7,4.7h0.1L11,9.9h3.8v11.2h-2.5v-6.7h-0.1l-0.9,6.7H9.4l-1-6.7h0L8.4,21.1z"/><path d="M15.8,9.8c0.4,0,3.2-0.1,4.7,0.1c1.2,0.1,1.8,1.1,1.9,2.3c0.1,2.2,0.1,4.4,0.1,6.6c0,0.2,0,0.5-0.1,0.8c-0.2,0.9-0.7,1.4-1.9,1.5c-1.5,0.1-3,0.1-4.4,0.1c0,0-0.1,0-0.2,0V9.8z M18.8,11.9v7.2c0.5,0,0.8-0.2,0.8-0.7c0-1.9,0-3.9,0-5.9C19.6,12,19.4,11.8,18.8,11.9z"/><path d="M2,21.1V9.9h2.9v11.2H2z"/><path d="M29.9,14.1c-0.1-0.8-0.6-1.2-1.4-1.4c-0.8-0.1-1.6,0-2.3,0.7V9.9h-2.8v11.2H26c0.1-0.2,0.1-0.4,0.2-0.5c0.1,0.1,0.2,0.2,0.3,0.3c0.7,0.5,1.5,0.6,2.3,0.3c0.7-0.3,1-0.9,1-1.6c0-0.8,0.1-1.7,0.1-2.6C30,16,30,15,29.9,14.1z M27.1,19.1c0,0.2-0.2,0.4-0.4,0.4s-0.4-0.2-0.4-0.4v-4.3c0-0.2,0.2-0.4,0.4-0.4s0.4,0.2,0.4,0.4V19.1z"/></svg>';
-
     let activeDetailsRoot = null;
     let activeSeasonRoot = null;
     let activeQualityRoot = null;
@@ -47,14 +46,16 @@ window.seerrFinLog = window.seerrFinLog || {
         if (value === true || value === false) {
             return value;
         }
+
         return fallback;
     }
 
     function getRequestModalAdvanced() {
         const plugin = window.seerrFinPlugin;
-        const modal = plugin && plugin._displaySettings && plugin._displaySettings.Advanced
-            ? plugin._displaySettings.Advanced.requestModal
-            : null;
+        const modal = plugin && plugin._displaySettings && plugin._displaySettings.Advanced ?
+            plugin._displaySettings.Advanced.requestModal :
+            null;
+
         return {
             tvSeasonPickerEnabled: readAdvancedBool(modal && modal.tvSeasonPickerEnabled, true),
             includeSpecialsSeason: readAdvancedBool(modal && modal.includeSpecialsSeason, false),
@@ -66,19 +67,18 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function tmdbImage(path, size) {
-        if (!path) {
-            return '';
-        }
+        if (!path) { return ''; }
+
         return 'https://image.tmdb.org/t/p/' + (size || 'original') + path;
     }
 
     function resolveImageUrl(url) {
-        if (!url) {
-            return '';
-        }
+        if (!url) { return ''; }
+
         if (url.startsWith('http') || url.startsWith('data:')) {
             return url;
         }
+
         return ApiClient.getUrl(url);
     }
 
@@ -86,9 +86,9 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function getLogoImageUrl(data) {
         const rawPath = data && (data.logoPath || data.logo_path);
-        if (!rawPath) {
-            return '';
-        }
+
+        if (!rawPath) { return ''; }
+
         return rawPath.startsWith('http') ? rawPath : tmdbImage(rawPath, 'original');
     }
 
@@ -110,33 +110,22 @@ window.seerrFinLog = window.seerrFinLog || {
             return null;
         }
 
-        const valid = logos.filter(function (logo) {
-            return logo && logo.file_path;
-        });
+        const valid = logos.filter(function (logo) { return logo && logo.file_path; });
 
-        if (!valid.length) {
-            return null;
-        }
+        if (!valid.length) { return null; }
 
         function byVote(a, b) {
-            return (b.vote_average || 0) - (a.vote_average || 0) ||
-                (b.width || 0) - (a.width || 0);
+            return (b.vote_average || 0) - (a.vote_average || 0) || (b.width || 0) - (a.width || 0);
         }
 
         // Prioritize getting English logos over en-US. Fallbacks to highest rated logo (not locale specific)
-        const english = valid
-            .filter(function (logo) { return isEnglishLogo(logo) && !isEnUsLogo(logo); })
-            .sort(byVote)[0];
-        if (english) {
-            return english.file_path;
-        }
+        const english = valid.filter(function (logo) { return isEnglishLogo(logo) && !isEnUsLogo(logo); }).sort(byVote)[0];
 
-        const enUs = valid
-            .filter(isEnUsLogo)
-            .sort(byVote)[0];
-        if (enUs) {
-            return enUs.file_path;
-        }
+        if (english) { return english.file_path; }
+
+        const enUs = valid.filter(isEnUsLogo).sort(byVote)[0];
+
+        if (enUs) { return enUs.file_path; }
 
         return valid.sort(byVote)[0].file_path;
     }
@@ -148,8 +137,7 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function appendTmdbQuery(url, name, value) {
-        return url + (url.indexOf('?') >= 0 ? '&' : '?') +
-            encodeURIComponent(name) + '=' + encodeURIComponent(value);
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') + encodeURIComponent(name) + '=' + encodeURIComponent(value);
     }
 
     function fetchTmdbJson(url, apiKey) {
@@ -166,6 +154,7 @@ window.seerrFinLog = window.seerrFinLog || {
             if (!response.ok) {
                 throw new Error('TMDB request failed: ' + response.status);
             }
+
             return response.json();
         });
     }
@@ -232,22 +221,16 @@ window.seerrFinLog = window.seerrFinLog || {
     function fetchTmdbLogoPath(mediaId, mediaType, apiKey) {
         const segment = mediaType === 'tv' ? 'tv' : 'movie';
         const base = 'https://api.themoviedb.org/3/' + segment + '/' + mediaId + '/images';
-        const filteredUrl = appendTmdbQuery(
-            base,
-            'include_image_language',
-            getRequestModalAdvanced().backdropLanguageFilter
-        );
+        const filteredUrl = appendTmdbQuery(base, 'include_image_language', getRequestModalAdvanced().backdropLanguageFilter);
 
         return fetchTmdbJson(filteredUrl, apiKey)
             .then(function (payload) {
                 let path = pickLogoFilePath(payload.logos);
-                if (path) {
-                    return path;
-                }
+
+                if (path) { return path; }
+
                 // If no English logo in filtered set, retry with all languages
-                return fetchTmdbJson(base, apiKey).then(function (all) {
-                    return pickLogoFilePath(all.logos);
-                });
+                return fetchTmdbJson(base, apiKey).then(function (all) { return pickLogoFilePath(all.logos); });
             })
             .catch(function (err) {
                 log.warn('TMDB logo fetch failed', err);
@@ -270,9 +253,7 @@ window.seerrFinLog = window.seerrFinLog || {
     function fetchTmdbDetailsFromBrowser(mediaId, mediaType, apiKey) {
         const isTv = mediaType === 'tv';
         const segment = isTv ? 'tv' : 'movie';
-        const append = isTv
-            ? 'videos,credits,content_ratings,external_ids'
-            : 'videos,credits,release_dates,external_ids';
+        const append = isTv ? 'videos,credits,content_ratings,external_ids' : 'videos,credits,release_dates,external_ids';
         let detailsUrl = 'https://api.themoviedb.org/3/' + segment + '/' + mediaId;
         detailsUrl = appendTmdbQuery(detailsUrl, 'append_to_response', append);
 
@@ -285,13 +266,16 @@ window.seerrFinLog = window.seerrFinLog || {
             const logoPath = results[1];
             const backdrop = results[2];
             const mapped = isTv ? mapTvDetails(raw) : mapMovieDetails(raw);
+
             if (logoPath) {
                 mapped.logoPath = logoPath;
             }
+
             if (backdrop) {
                 mapped.backdropUrl = resolveImageUrl(backdrop.backdropUrl || backdrop.BackdropUrl || '');
                 mapped.backdropPath = backdrop.tmdbBackdropPath || backdrop.TmdbBackdropPath || mapped.backdropPath;
             }
+
             return mapped;
         }).catch(function (err) {
             log.warn('TMDB details fetch failed', err);
@@ -300,14 +284,18 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function mergeJellyseerrOverlay(tmdbDetails, jellyseerrDetails) {
-        if (!jellyseerrDetails) {
-            return tmdbDetails;
-        }
+        if (!jellyseerrDetails) { return tmdbDetails; }
 
         // Preserve Seerr's text in the saved locale alongside TMDB artwork and metadata.
-        ['title', 'name', 'overview', 'genres'].forEach(function (key) {
+        [
+            'title',
+            'name',
+            'overview',
+            'genres'
+        ].forEach(function (key) {
             if (jellyseerrDetails[key]) tmdbDetails[key] = jellyseerrDetails[key];
         });
+
         if (jellyseerrDetails.mediaInfo) {
             tmdbDetails.mediaInfo = jellyseerrDetails.mediaInfo;
         }
@@ -325,9 +313,11 @@ window.seerrFinLog = window.seerrFinLog || {
         if (raw == null || raw === '') {
             return null;
         }
+
         if (typeof raw === 'number' && !Number.isNaN(raw)) {
             return raw;
         }
+
         const key = String(raw).trim().toUpperCase();
         const map = {
             UNKNOWN: 1,
@@ -339,19 +329,20 @@ window.seerrFinLog = window.seerrFinLog || {
             BLACKLISTED: 6,
             DELETED: 7
         };
-        if (key in map) {
-            return map[key];
-        }
+
+        if (key in map) { return map[key]; }
+
         const asNum = parseInt(key, 10);
+
         return Number.isNaN(asNum) ? null : asNum;
     }
 
     function getRequestButtonState(data, is4k) {
         const defaultLabel = is4k ? 'Request 4K' : 'Request';
         const info = data && data.mediaInfo;
-        const raw = is4k
-            ? (info && (info.status4k != null ? info.status4k : info.status4K)) ?? (data && data.status4k)
-            : (info && info.status != null ? info.status : (data && data.status));
+        const raw = is4k ?
+            (info && (info.status4k != null ? info.status4k : info.status4K)) ?? (data && data.status4k) :
+            (info && info.status != null ? info.status : (data && data.status));
         const status = normalizeMediaStatus(raw);
 
         // Watchlist entries also have mediaInfo; unknown or deleted media can be requested.
@@ -360,9 +351,7 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         // Some seasons/eps are present (more seasons should still be able to be requested)
-        if (status === 4) {
-            return { requested: false, label: defaultLabel };
-        }
+        if (status === 4) { return { requested: false, label: defaultLabel }; }
 
         const labels = {
             2: 'Pending',
@@ -370,17 +359,17 @@ window.seerrFinLog = window.seerrFinLog || {
             5: 'Available',
             6: 'Blocklisted'
         };
+
         return { requested: true, label: labels[status] || 'Already requested' };
     }
 
     function markRequestButton(is4k, label) {
-        if (!activeDetailsRoot) {
-            return;
-        }
+        if (!activeDetailsRoot) { return; }
+
         const btn = activeDetailsRoot.querySelector(is4k ? '[data-action="request-4k"]' : '[data-action="request"]');
-        if (!btn) {
-            return;
-        }
+
+        if (!btn) { return; }
+
         btn.disabled = true;
         btn.textContent = label || 'Already requested';
     }
@@ -394,7 +383,9 @@ window.seerrFinLog = window.seerrFinLog || {
             if (err && err.status === 404) {
                 return null;
             }
+
             log.warn('JustWatch qualities fetch failed', err);
+
             return null;
         });
     }
@@ -404,7 +395,8 @@ window.seerrFinLog = window.seerrFinLog || {
             <div class="bst-sidebar-lines bst-sidebar-lines--qualities" hidden>
                 <div><span class="bst-label">Highest released quality:</span> <span class="bst-quality-value">…</span></div>
                 <div><span class="bst-label">Most common quality:</span> <span class="bst-quality-value">…</span></div>
-            </div>`);
+            </div>
+        `);
 
         fetchJustWatchQualities(mediaId, mediaType).then(function (result) {
             if (!result) {
@@ -424,11 +416,7 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function fetchJellyseerrDetails(mediaId, mediaType) {
-        return ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/details/' + mediaType + '/' + mediaId),
-            type: 'GET',
-            dataType: 'json'
-        });
+        return ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/details/' + mediaType + '/' + mediaId), type: 'GET', dataType: 'json' });
     }
 
     function navigateToJellyfinItem(itemId) {
@@ -437,8 +425,7 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         // Only navigate once Jellyfin confirms the current user can see the item
-        ApiClient.getItem(ApiClient.getCurrentUserId(), itemId)
-            .then(function (item) {
+        ApiClient.getItem(ApiClient.getCurrentUserId(), itemId).then(function (item) {
                 closeDetailsModal();
                 window.Emby.Page.showItem(item);
             })
@@ -449,14 +436,11 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function loadClientSettings() {
-        return ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/client-settings'),
-            type: 'GET',
-            dataType: 'json'
-        }).catch(function (err) {
+        return ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/client-settings'), type: 'GET', dataType: 'json' }).catch(function (err) {
             log.warn('client settings fetch failed. falling back to plugin config', err);
             return ApiClient.getPluginConfiguration(PLUGIN_ID).catch(function (configErr) {
                 log.warn('plugin config fetch failed', configErr);
+
                 return {};
             });
         });
@@ -464,59 +448,53 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function loadModalDetails(mediaId, mediaType) {
         return loadClientSettings().then(function (config) {
-                const apiKey = getTmdbApiKey(config);
-                const jellyseerrPromise = fetchJellyseerrDetails(mediaId, mediaType);
+            const apiKey = getTmdbApiKey(config);
+            const jellyseerrPromise = fetchJellyseerrDetails(mediaId, mediaType);
 
-                if (!apiKey) {
-                    return jellyseerrPromise;
-                }
+            if (!apiKey) { return jellyseerrPromise; }
 
-                // Fetch both sources but prefer TMDB content with Seerr status
-                return Promise.all([
-                    jellyseerrPromise,
-                    fetchTmdbDetailsFromBrowser(mediaId, mediaType, apiKey)
-                ]).then(function (results) {
-                    const jellyseerr = results[0];
-                    const tmdb = results[1];
-                    if (tmdb) {
-                        return mergeJellyseerrOverlay(tmdb, jellyseerr);
-                    }
-                    return jellyseerr;
-                });
+            // Fetch both sources but prefer TMDB content with Seerr status
+            return Promise.all([jellyseerrPromise, fetchTmdbDetailsFromBrowser(mediaId, mediaType, apiKey)]).then(function (results) {
+                const jellyseerr = results[0];
+                const tmdb = results[1];
+
+                if (tmdb) { return mergeJellyseerrOverlay(tmdb, jellyseerr); }
+
+                return jellyseerr;
             });
+        });
     }
 
     function formatRuntime(minutes) {
-        if (!minutes) {
-            return '';
-        }
+        if (!minutes) { return ''; }
+
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
+
         if (h && m) {
             return h + 'h ' + m + 'm';
         }
-        if (h) {
-            return h + 'h';
-        }
+
+        if (h) { return h + 'h'; }
+
         return m + 'm';
     }
 
     function formatEndsAt(minutes) {
-        if (!minutes) {
-            return '';
-        }
+        if (!minutes) { return ''; }
+
         const end = new Date(Date.now() + minutes * 60 * 1000);
+
         return end.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
     }
 
     function formatReleaseDate(dateStr) {
-        if (!dateStr) {
-            return '';
-        }
+        if (!dateStr) { return ''; }
+
         const d = new Date(dateStr);
-        if (isNaN(d.getTime())) {
-            return dateStr;
-        }
+
+        if (isNaN(d.getTime())) { return dateStr; }
+
         return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
     }
 
@@ -525,28 +503,33 @@ window.seerrFinLog = window.seerrFinLog || {
         if (mediaType === 'movie' && data.releaseDates) {
             const us = (data.releaseDates.results || []).find(function (r) { return r.iso_3166_1 === 'US'; });
             const rel = us && us.release_dates && us.release_dates.find(function (rd) { return rd.certification; });
+
             if (rel && rel.certification) {
                 return rel.certification;
             }
         }
+
         if (mediaType === 'tv' && data.contentRatings) {
             const us = (data.contentRatings.results || []).find(function (r) { return r.iso_3166_1 === 'US'; });
+
             if (us && us.rating) {
                 return us.rating;
             }
         }
+
         return '';
     }
 
     function getTrailerKey(data) {
         const videos = data.relatedVideos || data.videos;
         const results = videos && (videos.results || videos);
+
         if (!results || !results.length) {
             return null;
         }
-        const trailer = results.find(function (v) {
-            return v.type === 'Trailer' && v.site === 'YouTube';
-        }) || results[0];
+
+        const trailer = results.find(function (v) { return v.type === 'Trailer' && v.site === 'YouTube'; }) || results[0];
+
         return trailer && trailer.key ? trailer.key : null;
     }
 
@@ -556,7 +539,6 @@ window.seerrFinLog = window.seerrFinLog || {
         const crew = credits && (credits.crew || []);
         const directors = crew.filter(function (c) { return c.job === 'Director'; }).slice(0, 2);
         const list = [];
-
         directors.forEach(function (d) {
             list.push({
                 id: d.id,
@@ -602,40 +584,37 @@ window.seerrFinLog = window.seerrFinLog || {
     function closeDetailsModal() {
         closeQualityModal();
         closeSeasonModal();
+
         if (activeDetailsRoot) {
             activeDetailsRoot.remove();
             activeDetailsRoot = null;
         }
+
         removeEscapeHandler();
         document.body.style.overflow = '';
     }
 
     function getRequestableSeasons(details) {
         const includeSpecials = getRequestModalAdvanced().includeSpecialsSeason === true;
+
         return (details.seasons || [])
             .filter(function (season) {
-                if (season.episodeCount === 0) {
-                    return false;
-                }
+                if (season.episodeCount === 0) { return false; }
+
                 if (!includeSpecials && season.seasonNumber <= 0) {
                     return false;
                 }
+
                 return true;
             })
-            .sort(function (a, b) {
-                return a.seasonNumber - b.seasonNumber;
-            });
+            .sort(function (a, b) { return a.seasonNumber - b.seasonNumber; });
     }
 
     function getSeasonRequestState(details, seasonNumber, is4k) {
         const mediaSeasons = details && details.mediaInfo && Array.isArray(details.mediaInfo.seasons) ? details.mediaInfo.seasons : [];
-        const mediaSeason = mediaSeasons.find(function (season) {
-            return season.seasonNumber === seasonNumber;
-        });
+        const mediaSeason = mediaSeasons.find(function (season) { return season.seasonNumber === seasonNumber; });
 
-        if (!mediaSeason) {
-            return null;
-        }
+        if (!mediaSeason) { return null; }
 
         const rawStatus = is4k ? (mediaSeason.status4k != null ? mediaSeason.status4k : mediaSeason.status4K) : mediaSeason.status;
         const status = normalizeMediaStatus(rawStatus);
@@ -655,11 +634,12 @@ window.seerrFinLog = window.seerrFinLog || {
 
         if (activeDetailsRoot) {
             let notice = activeDetailsRoot.querySelector('[data-request-notice]');
+
             if (!notice) {
                 const actionsRow = activeDetailsRoot.querySelector('.bst-actions-row');
-                if (!actionsRow) {
-                    return;
-                }
+
+                if (!actionsRow) { return; }
+
                 notice = document.createElement('div');
                 notice.className = 'bst-request-notice';
                 notice.setAttribute('data-request-notice', '1');
@@ -669,6 +649,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
             notice.textContent = text;
             notice.hidden = false;
+
             return;
         }
 
@@ -678,22 +659,21 @@ window.seerrFinLog = window.seerrFinLog || {
                 return;
             }
         } catch (err) {}
+
         window.alert(text);
     }
 
     function submitRequest(mediaId, mediaType, option, onSuccess, onError) {
-        const payload = {
-            MediaType: mediaType,
-            MediaId: parseInt(mediaId, 10),
-            Is4k: !!option.is4k
-        };
+        const payload = { MediaType: mediaType, MediaId: parseInt(mediaId, 10), Is4k: !!option.is4k };
 
         if (option.serverId != null && !Number.isNaN(Number(option.serverId))) {
             payload.ServerId = Number(option.serverId);
         }
+
         if (option.profileId != null && !Number.isNaN(Number(option.profileId))) {
             payload.ProfileId = Number(option.profileId);
         }
+
         if (option.rootFolder) {
             payload.RootFolder = option.rootFolder;
         }
@@ -710,24 +690,29 @@ window.seerrFinLog = window.seerrFinLog || {
             dataType: 'json'
         }).then(function (response) {
             // Seerr gives 202 with only a message when every selected season already exists in Seerr
-            const apiMessage = response && response.errors && response.errors.length > 0
-                ? 'Request failed. Check logs for details.'
-                : (response && response.message && response.id == null ? String(response.message) : '');
+            const apiMessage = response && response.errors && response.errors.length > 0 ?
+                'Request failed. Check logs for details.' :
+                (response && response.message && response.id == null ? String(response.message) : '');
 
             if (apiMessage) {
                 log.error('request was not created for ' + mediaType + '/' + mediaId, response);
+
                 if (typeof onError === 'function') {
                     onError(apiMessage);
                 } else {
                     notifyUser(apiMessage);
                 }
+
                 return Promise.reject({ handled: true });
             }
+
             log.info('request submitted for ' + mediaType + '/' + mediaId);
+
             // TV might still have more seasons to request (so don't lock the button)
             if (mediaType !== 'tv') {
                 markRequestButton(!!option.is4k, 'Already requested');
             }
+
             if (typeof onSuccess === 'function') {
                 onSuccess();
             }
@@ -735,22 +720,27 @@ window.seerrFinLog = window.seerrFinLog || {
             if (err && err.handled) {
                 return Promise.reject(err);
             }
+
             if (err && err.status === 409) {
                 if (mediaType !== 'tv') {
                     markRequestButton(!!option.is4k, 'Already requested');
                 }
+
                 if (typeof onSuccess === 'function') {
                     onSuccess();
                 }
+
                 return;
             }
 
             let messagePromise;
+
             if (err && err.responseJSON && (err.responseJSON.message || err.responseJSON.error)) {
                 messagePromise = Promise.resolve(String(err.responseJSON.message || err.responseJSON.error));
             } else if (err && typeof err.text === 'function') {
                 // Jellyfin ApiClient (fetch) often rejects with a Response object.
                 const reader = typeof err.clone === 'function' ? err.clone() : err;
+
                 messagePromise = reader.text().then(function (text) {
                     try {
                         const body = JSON.parse(text);
@@ -758,9 +748,7 @@ window.seerrFinLog = window.seerrFinLog || {
                     } catch (e) {
                         return text || 'Request failed';
                     }
-                }).catch(function () {
-                    return 'Request failed';
-                });
+                }).catch(function () { return 'Request failed'; });
             } else if (err && typeof err.message === 'string' && err.message) {
                 messagePromise = Promise.resolve(err.message);
             } else {
@@ -769,11 +757,13 @@ window.seerrFinLog = window.seerrFinLog || {
 
             return messagePromise.then(function (message) {
                 log.error('request failed for ' + mediaType + '/' + mediaId, err);
+
                 if (typeof onError === 'function') {
                     onError(message);
                 } else {
                     notifyUser(message);
                 }
+
                 return Promise.reject(err);
             });
         });
@@ -788,36 +778,39 @@ window.seerrFinLog = window.seerrFinLog || {
                         <h3 id="bst-season-title">Select seasons</h3>
                         <button type="button" class="bst-quality-close" aria-label="Close">${CLOSE_ICON}</button>
                     </div>
-                    <div class="bst-quality-list"><div class="bst-quality-loading">Loading seasons…</div></div>
+                    <div class="bst-quality-list">
+                        <div class="bst-quality-loading">Loading seasons…</div>
+                    </div>
                     <div class="bst-quality-footer">
                         <button type="button" class="bst-quality-continue" disabled>Continue</button>
                     </div>
                 </div>
-            </div>`;
+            </div>
+        `;
     }
 
     function renderSeasonList(seasons, details, is4k) {
-        const hasRequestableSeasons = seasons.some(function (season) {
-            return !getSeasonRequestState(details, season.seasonNumber, is4k);
-        });
+        const hasRequestableSeasons = seasons.some(function (season) { return !getSeasonRequestState(details, season.seasonNumber, is4k); });
         const rowsHtml = seasons.map(function (season) {
             const seasonNumber = season.seasonNumber;
             const requestState = getSeasonRequestState(details, seasonNumber, is4k);
-            const displayName = season.name && season.name !== `Season ${seasonNumber}`
-                ? escapeHtml(season.name)
-                : `Season ${seasonNumber}`;
-            const episodesHtml = season.episodeCount
-                ? `<span class="bst-season-episodes"> (${season.episodeCount}${season.episodeCount === 1 ? ' episode' : ' episodes'})</span>`
-                : '';
-            const statusHtml = requestState
-                ? `<span class="bst-season-status">${escapeHtml(requestState.label)}</span>`
-                : '';
+            const displayName = season.name && season.name !== `Season ${seasonNumber}` ?
+                escapeHtml(season.name) :
+                `Season ${seasonNumber}`;
+            const episodesHtml = season.episodeCount ?
+                `<span class="bst-season-episodes"> (${season.episodeCount}${season.episodeCount === 1 ? ' episode' : ' episodes'})</span>` :
+                '';
+            const statusHtml = requestState ?
+                `<span class="bst-season-status">${escapeHtml(requestState.label)}</span>` :
+                '';
+
             return `
                 <label class="bst-season-option${requestState ? ' bst-season-option--unavailable' : ''}">
                     <input type="checkbox" class="bst-season-checkbox bst-season-row-input" value="${seasonNumber}"${requestState ? ' checked disabled' : ''} />
                     <span class="bst-season-label">${displayName}${episodesHtml}</span>
                     ${statusHtml}
-                </label>`;
+                </label>
+            `;
         }).join('');
 
         return `
@@ -825,27 +818,24 @@ window.seerrFinLog = window.seerrFinLog || {
                 <input type="checkbox" class="bst-season-checkbox" data-select-all-seasons${hasRequestableSeasons ? '' : ' disabled'} />
                 <span class="bst-season-label">Select all</span>
             </label>
-            ${rowsHtml}`;
+            ${rowsHtml}
+        `;
     }
 
     function bindSeasonList(root, seasons, details, is4k, ctx) {
         const list = root.querySelector('.bst-quality-list');
         const continueBtn = root.querySelector('.bst-quality-continue');
         const selectedSeasons = ctx.selectedSeasons;
-        const requestableSeasons = seasons.filter(function (season) {
-            return !getSeasonRequestState(details, season.seasonNumber, is4k);
-        });
+        const requestableSeasons = seasons.filter(function (season) { return !getSeasonRequestState(details, season.seasonNumber, is4k); });
 
         function syncSelectAll() {
             const seasonNumbers = requestableSeasons.map(function (s) { return s.seasonNumber; });
             const selectAllInput = list.querySelector('[data-select-all-seasons]');
-            if (!selectAllInput) {
-                return;
-            }
+
+            if (!selectAllInput) { return; }
+
             selectAllInput.disabled = seasonNumbers.length === 0;
-            selectAllInput.checked = seasonNumbers.length > 0 && seasonNumbers.every(function (num) {
-                return selectedSeasons.indexOf(num) !== -1;
-            });
+            selectAllInput.checked = seasonNumbers.length > 0 && seasonNumbers.every(function (num) { return selectedSeasons.indexOf(num) !== -1; });
             selectAllInput.indeterminate = selectedSeasons.length > 0 && !selectAllInput.checked;
             const requireExplicit = getRequestModalAdvanced().requireExplicitSeasonSelection === true;
             continueBtn.disabled = seasonNumbers.length === 0 || (requireExplicit && selectedSeasons.length === 0);
@@ -853,38 +843,43 @@ window.seerrFinLog = window.seerrFinLog || {
 
         list.addEventListener('change', function (event) {
             const selectAllInput = event.target.closest('[data-select-all-seasons]');
+
             if (selectAllInput) {
                 if (selectAllInput.checked) {
                     ctx.selectedSeasons.length = 0;
-                    requestableSeasons.forEach(function (s) {
-                        ctx.selectedSeasons.push(s.seasonNumber);
-                    });
+                    requestableSeasons.forEach(function (s) { ctx.selectedSeasons.push(s.seasonNumber); });
                 } else {
                     ctx.selectedSeasons.length = 0;
                 }
+
                 list.querySelectorAll('.bst-season-row-input:not(:disabled)').forEach(function (input) {
                     input.checked = ctx.selectedSeasons.indexOf(parseInt(input.value, 10)) !== -1;
                 });
                 syncSelectAll();
+
                 return;
             }
 
             const rowInput = event.target.closest('.bst-season-row-input');
+
             if (!rowInput || rowInput.disabled) {
                 return;
             }
 
             const seasonNumber = parseInt(rowInput.value, 10);
+
             if (rowInput.checked) {
                 if (ctx.selectedSeasons.indexOf(seasonNumber) === -1) {
                     ctx.selectedSeasons.push(seasonNumber);
                 }
             } else {
                 const idx = ctx.selectedSeasons.indexOf(seasonNumber);
+
                 if (idx !== -1) {
                     ctx.selectedSeasons.splice(idx, 1);
                 }
             }
+
             syncSelectAll();
         });
 
@@ -894,14 +889,13 @@ window.seerrFinLog = window.seerrFinLog || {
     function openSeasonModal(mediaId, mediaType, title, onSuccess, is4k) {
         closeSeasonModal();
         is4k = !!is4k;
-
         document.body.insertAdjacentHTML('beforeend', renderSeasonModalShell());
         activeSeasonRoot = document.body.lastElementChild;
-
-        const ctx = { selectedSeasons: [] };
+        const ctx = {
+            selectedSeasons: []
+        };
         const continueBtn = activeSeasonRoot.querySelector('.bst-quality-continue');
         const list = activeSeasonRoot.querySelector('.bst-quality-list');
-
         activeSeasonRoot.querySelector('.bst-quality-backdrop').addEventListener('click', closeSeasonModal);
         activeSeasonRoot.querySelector('.bst-quality-close').addEventListener('click', closeSeasonModal);
 
@@ -931,6 +925,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function renderQualityModalShell(is4k) {
         const title = is4k ? 'Choose 4K quality profile' : 'Choose quality profile';
+
         return `
             <div class="bst-quality-wrapper">
                 <div class="bst-quality-backdrop"></div>
@@ -939,7 +934,9 @@ window.seerrFinLog = window.seerrFinLog || {
                         <h3 id="bst-quality-title">${title}</h3>
                         <button type="button" class="bst-quality-close" aria-label="Close">${CLOSE_ICON}</button>
                     </div>
-                    <div class="bst-quality-list"><div class="bst-quality-loading">Loading profiles…</div></div>
+                    <div class="bst-quality-list">
+                        <div class="bst-quality-loading">Loading profiles…</div>
+                    </div>
                     <div class="bst-quality-footer" hidden>
                         <div class="bst-root-folder-field" hidden>
                             <label for="bst-root-folder">Root folder</label>
@@ -948,30 +945,35 @@ window.seerrFinLog = window.seerrFinLog || {
                         <button type="button" class="bst-quality-continue" disabled>${is4k ? 'Request 4K' : 'Request'}</button>
                     </div>
                 </div>
-            </div>`;
+            </div>
+        `;
     }
 
     function renderQualityOptions(options) {
         const defaultOption = options.find(function (opt) { return opt.isDefault && opt.isDefaultProfile; });
-        const orderedOptions = defaultOption
-            ? [defaultOption].concat(options.filter(function (opt) { return opt !== defaultOption; }))
-            : options;
+        const orderedOptions = defaultOption ? [defaultOption].concat(options.filter(function (opt) { return opt !== defaultOption; })) : options;
+
         return orderedOptions.map(function (opt) {
             const label = escapeHtml(opt.profileName || 'Default');
             const subParts = [];
+
             if (opt.serverName) {
                 subParts.push(opt.serverName);
             }
+
             if (opt.is4k) {
                 subParts.push('4K');
             }
+
             const subHtml = subParts.length ? `<span class="bst-quality-option-sub">${escapeHtml(subParts.join(' · '))}</span>` : '';
+
             return `
                 <label class="bst-quality-option">
                     <input type="radio" class="bst-quality-radio" name="bst-quality-profile"${opt === defaultOption ? ' checked' : ''}
                         data-server-id="${opt.serverId}" data-profile-id="${opt.profileId}" />
                     <span>${label}${opt === defaultOption ? ' (Default)' : ''}${subHtml}</span>
-                </label>`;
+                </label>
+            `;
         }).join('');
     }
 
@@ -981,6 +983,7 @@ window.seerrFinLog = window.seerrFinLog || {
                 openSeasonModal(mediaId, mediaType, title, onSuccess, is4k);
                 return;
             }
+
             selectedSeasons = [];
         }
 
@@ -990,7 +993,6 @@ window.seerrFinLog = window.seerrFinLog || {
         closeQualityModal();
         document.body.insertAdjacentHTML('beforeend', renderQualityModalShell(is4k));
         activeQualityRoot = document.body.lastElementChild;
-
         const list = activeQualityRoot.querySelector('.bst-quality-list');
         const footer = activeQualityRoot.querySelector('.bst-quality-footer');
         const requestBtn = footer.querySelector('.bst-quality-continue');
@@ -1001,6 +1003,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
         function finishRequest() {
             closeQualityModal();
+
             if (typeof onSuccess === 'function') {
                 onSuccess();
             }
@@ -1011,25 +1014,19 @@ window.seerrFinLog = window.seerrFinLog || {
                 notifyUser(message || 'Request failed');
                 return;
             }
+
             list.innerHTML = `<div class="bst-quality-empty">${escapeHtml(message || 'Request failed')}</div>`;
             footer.hidden = true;
         }
 
-        ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/request-options/' + mediaType),
-            type: 'GET',
-            dataType: 'json'
-        }).then(function (data) {
-            if (!activeQualityRoot) {
-                return;
-            }
+        ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/request-options/' + mediaType), type: 'GET', dataType: 'json' }).then(function (data) {
+            if (!activeQualityRoot) { return; }
 
             const rawOptions = (data && (data.options || data.Options)) || [];
             const payload = {
                 options: (Array.isArray(rawOptions) ? rawOptions : []).map(function (opt) {
-                    if (!opt) {
-                        return null;
-                    }
+                    if (!opt) { return null; }
+
                     return {
                         serverId: opt.serverId != null ? opt.serverId : opt.ServerId,
                         serverName: opt.serverName || opt.ServerName || '',
@@ -1047,26 +1044,23 @@ window.seerrFinLog = window.seerrFinLog || {
                 canRequestAdvanced: !!(data && (data.canRequestAdvanced || data.CanRequestAdvanced))
             };
             const allowed = is4k ? payload.canRequest4k : payload.canRequest;
+
             if (!allowed) {
                 closeQualityModal();
-                notifyUser(is4k
-                    ? 'You do not have permission to make 4K requests.'
-                    : (mediaType === 'tv' ? 'You do not have permission to make series requests.' : 'You do not have permission to make movie requests.'));
+                notifyUser(is4k ?
+                    'You do not have permission to make 4K requests.' :
+                    (mediaType === 'tv' ? 'You do not have permission to make series requests.' : 'You do not have permission to make movie requests.'));
                 return;
             }
 
             if (!payload.canRequestAdvanced || !payload.options.length) {
                 list.innerHTML = `<div class="bst-quality-loading">Submitting request…</div>`;
-                submitRequest(mediaId, mediaType, {
-                    is4k: is4k,
-                    seasons: selectedSeasons
-                }, finishRequest, failRequest).catch(function () {});
+                submitRequest(mediaId, mediaType, { is4k: is4k, seasons: selectedSeasons }, finishRequest, failRequest).catch(function () {});
                 return;
             }
 
-            const filteredOptions = payload.options.filter(function (opt) {
-                return !!opt.is4k === is4k;
-            });
+            const filteredOptions = payload.options.filter(function (opt) { return !!opt.is4k === is4k; });
+
             if (!filteredOptions.length) {
                 failRequest(is4k ? 'No 4K quality profiles available.' : 'No quality profiles available.');
                 return;
@@ -1083,20 +1077,21 @@ window.seerrFinLog = window.seerrFinLog || {
                 const option = selected && filteredOptions.find(function (opt) {
                     return String(opt.serverId) === selected.dataset.serverId && String(opt.profileId) === selected.dataset.profileId;
                 });
-                const previousFolder = option && selectedOption && option.serverId === selectedOption.serverId
-                    ? rootFolderSelect.value : option && option.rootFolder;
+                const previousFolder = option && selectedOption && option.serverId === selectedOption.serverId ?
+                    rootFolderSelect.value : option && option.rootFolder;
                 selectedOption = option;
                 rootFolderField.hidden = !getRequestModalAdvanced().showRootFolderSelector || !option || !option.rootFolders.length;
                 rootFolderSelect.replaceChildren();
+
                 if (!rootFolderField.hidden) {
-                    option.rootFolders.forEach(function (path) {
-                        rootFolderSelect.add(new Option(path, path));
-                    });
+                    option.rootFolders.forEach(function (path) { rootFolderSelect.add(new Option(path, path)); });
                     rootFolderSelect.value = previousFolder || '';
+
                     if (!rootFolderSelect.value) {
                         rootFolderSelect.add(new Option('Choose a root folder', '', true, true), 0);
                     }
                 }
+
                 updateRequestButton();
             }
 
@@ -1132,14 +1127,13 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function renderCast(cast) {
-        if (!cast.length) {
-            return;
-        }
+        if (!cast.length) { return; }
 
         const cardsHtml = cast.map(function (person) {
-            const imgSrc = person.profile_path
-                ? tmdbImage(person.profile_path, 'w185')
-                : `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect fill="#333" width="128" height="128"/></svg>')}`;
+            const imgSrc = person.profile_path ?
+                tmdbImage(person.profile_path, 'w185') :
+                `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect fill="#333" width="128" height="128"/></svg>')}`;
+
             return `
                 <a class="bst-cast-card" href="https://www.themoviedb.org/person/${person.id}" target="_blank" rel="noopener noreferrer">
                     <div class="bst-cast-avatar">
@@ -1147,13 +1141,15 @@ window.seerrFinLog = window.seerrFinLog || {
                     </div>
                     <span class="bst-cast-name">${escapeHtml(person.name)}</span>
                     <span class="bst-cast-role">${escapeHtml(person.role)}</span>
-                </a>`;
+                </a>
+            `;
         }).join('');
 
         return `
             <div class="bst-cast-section">
                 <div class="bst-cast-scroll">${cardsHtml}</div>
-            </div>`;
+            </div>
+        `;
     }
 
     function renderDetails(data, mediaId, mediaType) {
@@ -1206,9 +1202,11 @@ window.seerrFinLog = window.seerrFinLog || {
                                                             ${TMDB_LOGO_SVG}
                                                             <span class="bst-meta-emphasis">${Number(rating).toFixed(1)}</span>
                                                             ${voteCount ? `<span class="bst-vote-muted">(${Number(voteCount).toLocaleString()})</span>` : ''}
-                                                        </div>` : ''}
+                                                        </div>
+                                                    ` : ''}
                                                     ${year ? `${rating ? '<span class="bst-dot">•</span>' : ''}<span class="bst-meta-emphasis">${escapeHtml(year)}</span>` : ''}
-                                                </div>` : ''}
+                                                </div>
+                                            ` : ''}
                                         </div>
                                     </div>
                                     <div class="bst-content">
@@ -1250,13 +1248,16 @@ window.seerrFinLog = window.seerrFinLog || {
                                                             <a class="bst-external-link tmdb" href="https://www.themoviedb.org/${mediaType === 'tv' ? 'tv' : 'movie'}/${tmdbId}"
                                                                 target="_blank" rel="noopener noreferrer" title="View on TMDB" style="animation-delay:60ms">
                                                                 ${TMDB_LOGO_SVG}
-                                                            </a>` : ''}
+                                                            </a>
+                                                        ` : ''}
                                                         ${imdbId ? `
                                                             <a class="bst-external-link imdb" href="https://www.imdb.com/title/${imdbId}"
                                                                 target="_blank" rel="noopener noreferrer" title="View on IMDb" style="animation-delay:120ms">
                                                                 ${IMDB_ICON}
-                                                            </a>` : ''}
-                                                    </div>` : ''}
+                                                            </a>
+                                                        ` : ''}
+                                                    </div>
+                                                ` : ''}
                                             </div>
                                         </div>
                                         ${cast.length ? renderCast(cast) : ''}
@@ -1266,18 +1267,18 @@ window.seerrFinLog = window.seerrFinLog || {
                         </div>
                     </div>
                 </div>
-            </div>`;
+            </div>
+        `;
     }
 
     function bindDetailsModal(root, data, mediaId, mediaType) {
         const title = data.title || data.name || 'Details';
         const trailerKey = getTrailerKey(data);
         const tmdbId = data.id;
-
         root.querySelector('.bst-popout-backdrop').addEventListener('click', closeDetailsModal);
         root.querySelector('.bst-modal-close').addEventListener('click', closeDetailsModal);
-
         const logoImg = root.querySelector('.bst-hero-logo');
+
         if (logoImg) {
             logoImg.addEventListener('error', function () {
                 const fallbackTitle = logoImg.getAttribute('data-fallback-title') || title;
@@ -1290,60 +1291,70 @@ window.seerrFinLog = window.seerrFinLog || {
         const watchlistUserId = ApiClient.getCurrentUserId();
         let watchlisted = false;
         let watchlistLoaded = false;
+
         function updateWatchlistButton(result) {
             if (!root.isConnected || watchlistUserId !== ApiClient.getCurrentUserId()) return;
+
             watchlisted = result.watchlisted === true;
             watchlistLoaded = true;
             watchlistBtn.setAttribute('aria-pressed', String(watchlisted));
             watchlistBtn.textContent = watchlisted ? 'Remove from watchlist' : 'Add to watchlist';
             watchlistBtn.disabled = false;
         }
+
         function loadWatchlistButton() {
             if (!window.seerrFinWatchlist) {
                 watchlistBtn.textContent = 'Watchlist unavailable';
                 return;
             }
+
             window.seerrFinWatchlist.get(mediaId, mediaType).then(updateWatchlistButton).catch(function () {
                 if (!root.isConnected || watchlistUserId !== ApiClient.getCurrentUserId()) return;
+
                 watchlistBtn.textContent = 'Retry watchlist';
                 watchlistBtn.disabled = false;
             });
         }
+
         watchlistBtn.addEventListener('click', function () {
             if (watchlistUserId !== ApiClient.getCurrentUserId()) return;
+
             watchlistBtn.disabled = true;
-            if (!watchlistLoaded) { loadWatchlistButton(); return; }
+
+            if (!watchlistLoaded) {
+                loadWatchlistButton();
+                return;
+            }
+
             watchlistBtn.textContent = watchlisted ? 'Removing…' : 'Adding…';
             window.seerrFinWatchlist.set(mediaId, mediaType, !watchlisted).then(updateWatchlistButton).catch(function (error) {
                 if (!root.isConnected || watchlistUserId !== ApiClient.getCurrentUserId()) return;
+
                 updateWatchlistButton({ watchlisted: watchlisted });
                 notifyUser(error?.responseJSON?.message || 'Unable to update watchlist. Please try again.');
             });
         });
         loadWatchlistButton();
-
         const requestBtn = root.querySelector('[data-action="request"]');
+
         if (requestBtn && !requestBtn.disabled) {
-            requestBtn.addEventListener('click', function () {
-                openQualityModal(mediaId, mediaType, title);
-            });
+            requestBtn.addEventListener('click', function () { openQualityModal(mediaId, mediaType, title); });
         }
 
         const request4kBtn = root.querySelector('[data-action="request-4k"]');
+
         if (request4kBtn && !request4kBtn.disabled) {
-            request4kBtn.addEventListener('click', function () {
-                openQualityModal(mediaId, mediaType, title, undefined, true);
-            });
+            request4kBtn.addEventListener('click', function () { openQualityModal(mediaId, mediaType, title, undefined, true); });
         }
 
         const playBtn = root.querySelector('[data-action="play"]');
+
         if (playBtn) {
-            playBtn.addEventListener('click', function () {
-                navigateToJellyfinItem(playBtn.getAttribute('data-jellyfin-item-id'));
-            });
+            playBtn.addEventListener('click', function () { navigateToJellyfinItem(playBtn.getAttribute('data-jellyfin-item-id')); });
         }
 
         const trailerBtn = root.querySelector('[data-action="trailer"]');
+
         if (trailerBtn && trailerKey) {
             trailerBtn.addEventListener('click', function () {
                 window.open(`https://www.youtube.com/watch?v=${trailerKey}`, '_blank', 'noopener,noreferrer');
@@ -1352,6 +1363,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
         const settings = window.seerrFinPlugin && window.seerrFinPlugin._displaySettings;
         const showQualityRecommendations = !settings || settings.QualityRecommendations !== false;
+
         if (showQualityRecommendations && tmdbId) {
             const qualitySlot = root.querySelector('[data-quality-slot]');
             const qualityLines = buildJustWatchQualityLines(tmdbId, mediaType);
@@ -1374,13 +1386,13 @@ window.seerrFinLog = window.seerrFinLog || {
                         <div class="bst-modal-loading">Loading…</div>
                     </div>
                 </div>
-            </div>`;
+            </div>
+        `;
     }
 
     function openDetailsModal(mediaId, mediaType) {
         closeDetailsModal();
         log.info('opening details modal for ' + mediaType + '/' + mediaId);
-
         document.body.insertAdjacentHTML('beforeend', renderDetailsLoading());
         activeDetailsRoot = document.body.lastElementChild;
         document.body.style.overflow = 'hidden';
@@ -1389,6 +1401,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
         loadModalDetails(mediaId, mediaType).then(function (data) {
             if (activeDetailsRoot !== loadingRoot || !loadingRoot.isConnected || ApiClient.getCurrentUserId() !== userId) return;
+
             const dom = buildDetailsDom(data, mediaId, mediaType);
             activeDetailsRoot.replaceWith(dom);
             activeDetailsRoot = dom;
@@ -1408,15 +1421,12 @@ window.seerrFinLog = window.seerrFinLog || {
             document.addEventListener('keydown', escapeHandler);
         }).catch(function (err) {
             if (activeDetailsRoot !== loadingRoot || !loadingRoot.isConnected || ApiClient.getCurrentUserId() !== userId) return;
+
             log.error('details modal failed for ' + mediaType + '/' + mediaId, err);
             closeDetailsModal();
             Dashboard.alert('Failed to load details');
         });
     }
 
-    window.seerrFinModal = {
-        open: openDetailsModal,
-        close: closeDetailsModal,
-        openQualityPicker: openQualityModal
-    };
+    window.seerrFinModal = { open: openDetailsModal, close: closeDetailsModal, openQualityPicker: openQualityModal };
 })();

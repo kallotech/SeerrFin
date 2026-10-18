@@ -7,10 +7,7 @@ namespace Jellyfin.Plugin.SeerrFin.Helpers;
 
 public static class ImageCacheHelper
 {
-    public static string GetCachedImageUrl(
-        ImageCacheService imageCacheService,
-        string? sourceUrl,
-        ILogger? logger = null)
+    public static string GetCachedImageUrl(ImageCacheService imageCacheService, string? sourceUrl, ILogger? logger = null)
     {
         if (string.IsNullOrEmpty(sourceUrl))
         {
@@ -18,6 +15,7 @@ public static class ImageCacheHelper
         }
 
         PluginConfiguration? config = SeerrFinPlugin.Instance?.Configuration;
+
         try
         {
             if (config != null && AdvancedSettingsHelper.Resolve(config).Tmdb.DirectBrowserImages)
@@ -28,10 +26,7 @@ public static class ImageCacheHelper
             int cacheTimeout = config?.CacheTimeoutSeconds ?? 86400;
 
             // Used in discovery mapping which allows cached images to be used in discovery cards
-            string? cacheKey = imageCacheService.GetOrCacheImage(sourceUrl, cacheTimeout)
-                .GetAwaiter()
-                .GetResult();
-
+            string? cacheKey = imageCacheService.GetOrCacheImage(sourceUrl, cacheTimeout).GetAwaiter().GetResult();
             if (!string.IsNullOrEmpty(cacheKey))
             {
                 return $"/SeerrFin/CachedImage/{cacheKey}";
@@ -41,6 +36,7 @@ public static class ImageCacheHelper
             if (fallback)
             {
                 logger?.LogWarning("SeerrFin • failed to cache image from {SourceUrl}, using original URL", sourceUrl);
+
                 return sourceUrl;
             }
 
@@ -50,6 +46,7 @@ public static class ImageCacheHelper
         {
             logger?.LogError(ex, "SeerrFin • error caching image from {SourceUrl}", sourceUrl);
             bool fallback = config == null || AdvancedSettingsHelper.Resolve(config).Tmdb.FallbackToOriginalImageUrl;
+
             return fallback ? sourceUrl : string.Empty;
         }
     }

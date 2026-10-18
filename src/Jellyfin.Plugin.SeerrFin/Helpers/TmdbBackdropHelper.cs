@@ -20,11 +20,7 @@ public static class TmdbBackdropHelper
             return new BackdropPickResult();
         }
 
-        List<JObject> valid = backdrops
-            .OfType<JObject>()
-            .Where(b => !string.IsNullOrEmpty(b.Value<string>("file_path")))
-            .ToList();
-
+        List<JObject> valid = backdrops.OfType<JObject>().Where(b => !string.IsNullOrEmpty(b.Value<string>("file_path"))).ToList();
         if (valid.Count == 0)
         {
             return new BackdropPickResult();
@@ -34,6 +30,7 @@ public static class TmdbBackdropHelper
         static bool IsEnglish(JObject b)
         {
             string? lang = b.Value<string>("iso_639_1");
+
             return string.Equals(lang, "en", StringComparison.OrdinalIgnoreCase);
         }
 
@@ -41,6 +38,7 @@ public static class TmdbBackdropHelper
         static bool HasNoLanguage(JObject b)
         {
             string? lang = b.Value<string>("iso_639_1");
+
             return string.IsNullOrEmpty(lang);
         }
 
@@ -71,30 +69,58 @@ public static class TmdbBackdropHelper
             return new BackdropPickResult { FilePath = noLangPath, HasEnglishBackdrop = false };
         }
 
-        return new BackdropPickResult
-        {
-            FilePath = TopPath(valid),
-            HasEnglishBackdrop = false
-        };
+        return new BackdropPickResult { FilePath = TopPath(valid), HasEnglishBackdrop = false };
     }
 
-    public static async Task<BackdropPickResult> FetchBackdropAsync(HttpClient httpClient, string mediaType, int tmdbId, string apiKey, string? languageFilter = "en,null,en-US", bool preferOriginalLanguage = false, bool preferNeutral = false, CancellationToken cancellationToken = default)
+    public static async Task<BackdropPickResult> FetchBackdropAsync(
+        HttpClient httpClient,
+        string mediaType,
+        int tmdbId,
+        string apiKey,
+        string? languageFilter = "en,null,en-US",
+        bool preferOriginalLanguage = false,
+        bool preferNeutral = false,
+        CancellationToken cancellationToken = default
+    )
     {
         string segment = string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase) ? "tv" : "movie";
         string baseUrl = $"https://api.themoviedb.org/3/{segment}/{tmdbId.ToString(CultureInfo.InvariantCulture)}/images";
         string filter = string.IsNullOrWhiteSpace(languageFilter) ? "en,null,en-US" : languageFilter;
         string filteredUrl = AppendQuery(baseUrl, "include_image_language", filter);
 
-        BackdropPickResult filtered = await TryFetchBackdrop(httpClient, filteredUrl, apiKey, preferOriginalLanguage, preferNeutral, cancellationToken).ConfigureAwait(false);
+        BackdropPickResult filtered = await TryFetchBackdrop(
+                httpClient,
+                filteredUrl,
+                apiKey,
+                preferOriginalLanguage,
+                preferNeutral,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         if (!string.IsNullOrEmpty(filtered.FilePath))
         {
             return filtered;
         }
 
-        return await TryFetchBackdrop(httpClient, baseUrl, apiKey, preferOriginalLanguage, preferNeutral, cancellationToken).ConfigureAwait(false);
+        return await TryFetchBackdrop(
+                httpClient,
+                baseUrl,
+                apiKey,
+                preferOriginalLanguage,
+                preferNeutral,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
-    private static async Task<BackdropPickResult> TryFetchBackdrop(HttpClient httpClient, string url, string apiKey, bool preferOriginalLanguage, bool preferNeutral, CancellationToken cancellationToken = default)
+    private static async Task<BackdropPickResult> TryFetchBackdrop(
+        HttpClient httpClient,
+        string url,
+        string apiKey,
+        bool preferOriginalLanguage,
+        bool preferNeutral,
+        CancellationToken cancellationToken = default
+    )
     {
         using HttpRequestMessage request = BuildRequest(url, apiKey);
         using HttpResponseMessage response = await httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -105,6 +131,7 @@ public static class TmdbBackdropHelper
 
         string json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         JObject? payload = JObject.Parse(json);
+
         return PickBackdrop(payload?.Value<JArray>("backdrops"), preferOriginalLanguage, preferNeutral);
     }
 
@@ -126,11 +153,7 @@ public static class TmdbBackdropHelper
             return new BackdropPickResult();
         }
 
-        List<JObject> valid = backdrops
-            .OfType<JObject>()
-            .Where(b => !string.IsNullOrEmpty(b.Value<string>("file_path")))
-            .ToList();
-
+        List<JObject> valid = backdrops.OfType<JObject>().Where(b => !string.IsNullOrEmpty(b.Value<string>("file_path"))).ToList();
         if (valid.Count == 0)
         {
             return new BackdropPickResult();
@@ -138,9 +161,12 @@ public static class TmdbBackdropHelper
 
         static string? TopPath(IEnumerable<JObject> items) => items.OrderByDescending(b => b.Value<float?>("vote_average") ?? 0f).FirstOrDefault()?.Value<string>("file_path");
 
-        string? originalPath = TopPath(valid.Where(b =>
-            !string.IsNullOrEmpty(b.Value<string>("iso_639_1")) &&
-            !string.Equals(b.Value<string>("iso_639_1"), "en", StringComparison.OrdinalIgnoreCase)));
+        string? originalPath = TopPath(
+            valid.Where(b =>
+                !string.IsNullOrEmpty(b.Value<string>("iso_639_1"))
+                && !string.Equals(b.Value<string>("iso_639_1"), "en", StringComparison.OrdinalIgnoreCase)
+            )
+        );
         if (!string.IsNullOrEmpty(originalPath))
         {
             return new BackdropPickResult { FilePath = originalPath, HasEnglishBackdrop = false };
@@ -169,12 +195,14 @@ public static class TmdbBackdropHelper
     private static bool IsBearerToken(string apiKey)
     {
         string[] parts = apiKey.Split('.');
+
         return parts.Length == 3;
     }
 
     private static string AppendQuery(string url, string name, string value)
     {
         string separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+
         return url + separator + Uri.EscapeDataString(name) + "=" + Uri.EscapeDataString(value);
     }
 }

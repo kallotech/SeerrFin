@@ -1,9 +1,7 @@
 'use strict';
 
 window.seerrFinLog = window.seerrFinLog || {
-    info: function (msg) {
-        console.log('SeerrFin • ' + msg);
-    },
+    info: function (msg) { console.log('SeerrFin • ' + msg); },
     warn: function (msg, detail) {
         if (detail !== undefined) {
             console.warn('SeerrFin • ' + msg, detail);
@@ -21,9 +19,8 @@ window.seerrFinLog = window.seerrFinLog || {
 };
 
 (function () {
-    if (window.__seerrFinRequestsInit) {
-        return;
-    }
+    if (window.__seerrFinRequestsInit) { return; }
+
     window.__seerrFinRequestsInit = true;
 
     const log = window.seerrFinLog;
@@ -56,61 +53,44 @@ window.seerrFinLog = window.seerrFinLog || {
     const DEFAULT_AUTO_REFRESH_INTERVAL_SECONDS = 10;
 
     function loadClientSettings() {
-        return ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/client-settings'),
-            type: 'GET',
-            dataType: 'json'
-        }).then(function (config) {
-            state.clientSettings = {
-                jellyseerrBrowseUrl: (config.jellyseerrBrowseUrl || '').replace(/\/+$/, '')
-            };
+        return ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/client-settings'), type: 'GET', dataType: 'json' }).then(function (config) {
+            state.clientSettings = { jellyseerrBrowseUrl: (config.jellyseerrBrowseUrl || '').replace(/\/+$/, '') };
         }).catch(function (err) {
             log.warn('client settings fetch failed', err);
-            state.clientSettings = {
-                jellyseerrBrowseUrl: ''
-            };
+            state.clientSettings = { jellyseerrBrowseUrl: '' };
         });
     }
 
     function openJellyseerrManage(tmdbId, mediaType) {
-        if (!tmdbId || !mediaType) {
-            return;
-        }
+        if (!tmdbId || !mediaType) { return; }
 
         if (getRequestsAdvanced().openExternalLinksInModal === true && window.seerrFinApp) {
             window.seerrFinApp.openMedia(mediaType, Number(tmdbId));
+
             return;
         }
 
         const openWithBase = function (base) {
-            if (!base) {
-                return;
-            }
+            if (!base) { return; }
 
             const segment = mediaType === 'tv' ? 'tv' : 'movie';
+
             window.open(base + '/' + segment + '/' + tmdbId + '?manage=1', '_blank', 'noopener,noreferrer');
         };
 
         if (state.clientSettings?.jellyseerrBrowseUrl) {
             openWithBase(state.clientSettings.jellyseerrBrowseUrl);
+
             return;
         }
 
-        ApiClient.ajax({
-            url: ApiClient.getUrl('SeerrFin/client-settings'),
-            type: 'GET',
-            dataType: 'json'
-        }).then(function (config) {
-            openWithBase((config.jellyseerrBrowseUrl || '').replace(/\/+$/, ''));
-        }).catch(function (err) {
-            log.warn('Jellyseerr browse URL fetch failed', err);
-        });
+        ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/client-settings'), type: 'GET', dataType: 'json' })
+            .then(function (config) { openWithBase((config.jellyseerrBrowseUrl || '').replace(/\/+$/, '')); })
+            .catch(function (err) { log.warn('Jellyseerr browse URL fetch failed', err); });
     }
 
     function openServarrUrl(url, service) {
-        if (!url) {
-            return;
-        }
+        if (!url) { return; }
 
         if (getRequestsAdvanced().openExternalLinksInModal === true && window.seerrFinApp) {
             window.seerrFinApp.openExternal(url, service);
@@ -122,6 +102,7 @@ window.seerrFinLog = window.seerrFinLog || {
     function escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text || '';
+
         return div.innerHTML;
     }
 
@@ -132,6 +113,7 @@ window.seerrFinLog = window.seerrFinLog || {
     function getRequestsAdvanced() {
         const plugin = getPlugin();
         const advanced = plugin && plugin._displaySettings && plugin._displaySettings.Advanced;
+
         return (advanced && advanced.requests) || {};
     }
 
@@ -143,10 +125,12 @@ window.seerrFinLog = window.seerrFinLog || {
         const settings = getRequestsAdvanced();
         const rawInterval = settings.autoRefreshIntervalSeconds;
         let intervalSeconds = DEFAULT_AUTO_REFRESH_INTERVAL_SECONDS;
+
         if (rawInterval === 0 || rawInterval === '0') {
             intervalSeconds = 0;
         } else if (rawInterval !== undefined && rawInterval !== null && rawInterval !== '') {
             const parsed = Number(rawInterval);
+
             if (!isNaN(parsed)) {
                 intervalSeconds = Math.max(0, Math.min(3600, parsed));
             }
@@ -161,124 +145,96 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function getCardOptions() {
         const settings = getRequestsAdvanced();
-        return {
-            interactive: settings.cardsInteractive === true,
-            includeMetaText: settings.cardsIncludeMetaText === true
-        };
+
+        return { interactive: settings.cardsInteractive === true, includeMetaText: settings.cardsIncludeMetaText === true };
     }
 
     function findActiveContainer() {
         const all = document.querySelectorAll('.seerrfin-requests-sections');
+
         for (let i = all.length - 1; i >= 0; i--) {
             const container = all[i];
-            if (!container.isConnected) {
-                continue;
-            }
+
+            if (!container.isConnected) { continue; }
 
             const page = container.closest('.page');
-            if (page && page.classList.contains('hide')) {
-                continue;
-            }
+
+            if (page && page.classList.contains('hide')) { continue; }
 
             const tabPanel = container.closest('.tabContent, .pageTabContent');
-            if (tabPanel && tabPanel.classList.contains('hide')) {
-                continue;
-            }
 
-            if (container.offsetParent !== null) {
-                return container;
-            }
+            if (tabPanel && tabPanel.classList.contains('hide')) { continue; }
+
+            if (container.offsetParent !== null) { return container; }
         }
+
         return null;
     }
 
     function formatRelativeDate(dateStr) {
-        if (!dateStr) {
-            return '';
-        }
+        if (!dateStr) { return ''; }
 
         const date = new Date(dateStr);
-        if (isNaN(date.getTime())) {
-            return '';
-        }
+
+        if (isNaN(date.getTime())) { return ''; }
 
         const diff = Date.now() - date.getTime();
-        if (diff < 0) {
-            return '';
-        }
+
+        if (diff < 0) { return ''; }
 
         const minutes = Math.floor(diff / 60000);
         const hours = Math.floor(diff / 3600000);
         const days = Math.floor(diff / 86400000);
 
-        if (minutes < 1) {
-            return 'just now';
-        }
-        if (minutes < 60) {
-            return minutes + 'm ago';
-        }
-        if (hours < 24) {
-            return hours + 'h ago';
-        }
-        if (days < 30) {
-            return days + 'd ago';
-        }
+        if (minutes < 1) { return 'just now'; }
+
+        if (minutes < 60) { return minutes + 'm ago'; }
+
+        if (hours < 24) { return hours + 'h ago'; }
+
+        if (days < 30) { return days + 'd ago'; }
 
         return date.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
     }
 
     function chipClassForStatus(label) {
         const normalized = (label || '').toLowerCase();
-        if (normalized.includes('available') && !normalized.includes('partially')) {
-            return 'seerrfin-request-chip--available';
-        }
-        if (normalized.includes('partially')) {
-            return 'seerrfin-request-chip--partial';
-        }
-        if (normalized.includes('processing')) {
-            return 'seerrfin-request-chip--processing';
-        }
-        if (normalized.includes('pending')) {
-            return 'seerrfin-request-chip--pending';
-        }
-        if (normalized.includes('approved')) {
-            return 'seerrfin-request-chip--approved';
-        }
-        if (normalized.includes('declined') || normalized.includes('failed')) {
-            return 'seerrfin-request-chip--declined';
-        }
+
+        if (normalized.includes('available') && !normalized.includes('partially')) { return 'seerrfin-request-chip--available'; }
+
+        if (normalized.includes('partially')) { return 'seerrfin-request-chip--partial'; }
+
+        if (normalized.includes('processing')) { return 'seerrfin-request-chip--processing'; }
+
+        if (normalized.includes('pending')) { return 'seerrfin-request-chip--pending'; }
+
+        if (normalized.includes('approved')) { return 'seerrfin-request-chip--approved'; }
+
+        if (normalized.includes('declined') || normalized.includes('failed')) { return 'seerrfin-request-chip--declined'; }
+
         return '';
     }
 
     function getAvatarUrl(avatarPath) {
-        if (!avatarPath) {
-            return '';
-        }
+        if (!avatarPath) { return ''; }
 
-        return ApiClient.getUrl('SeerrFin/proxy/avatar', {
-            path: avatarPath,
-            ApiKey: ApiClient.accessToken()
-        });
+        return ApiClient.getUrl('SeerrFin/proxy/avatar', { path: avatarPath, ApiKey: ApiClient.accessToken() });
     }
 
     function isPlayableRequest(item) {
         const label = (item.mediaStatusLabel || '').toLowerCase();
+
         return (label === 'available' || label === 'partially available') && item.jellyfinItemId;
     }
 
     function navigateToJellyfinItem(itemId) {
-        if (!itemId || typeof ApiClient === 'undefined') {
-            return;
-        }
+        if (!itemId || typeof ApiClient === 'undefined') { return; }
 
         function openDetails(id, item) {
             window.Emby.Page.showItem(item || { Id: id, ServerId: ApiClient.serverId() });
         }
 
-        ApiClient.getItem(ApiClient.getCurrentUserId(), itemId)
-            .then(function (item) {
-                openDetails(itemId, item);
-            })
+        ApiClient.getItem(ApiClient.getCurrentUserId(), itemId).then(function (item) { openDetails(itemId, item); })
             .catch(function (err) {
                 log.warn('Jellyfin item lookup failed for ' + itemId, err);
                 openDetails(itemId);
@@ -286,9 +242,7 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function openRequestModal(tmdbId, mediaType) {
-        if (!tmdbId || !mediaType) {
-            return;
-        }
+        if (!tmdbId || !mediaType) { return; }
 
         if (window.seerrFinModal && typeof window.seerrFinModal.open === 'function') {
             window.seerrFinModal.open(tmdbId, mediaType);
@@ -300,9 +254,7 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function renderCardActions(item) {
-        if (!item.tmdbId) {
-            return;
-        }
+        if (!item.tmdbId) { return; }
 
         const safeTitle = escapeHtml(item.title || 'content');
         const mediaType = item.type === 'tv' ? 'tv' : 'movie';
@@ -314,31 +266,38 @@ window.seerrFinLog = window.seerrFinLog || {
                 data-jellyfin-item-id="${escapeHtml(String(item.jellyfinItemId))}"
                 aria-label="Open ${safeTitle} in Jellyfin" title="Open in Jellyfin">
                 <span class="material-icons" aria-hidden="true">play_arrow</span>
-            </button>` : '';
+            </button>
+        ` : '';
 
         let radarrBtn = '';
+
         if (mediaType === 'movie') {
             const radarrUrl = getServarrOpenUrl(item);
+
             if (radarrUrl) {
                 radarrBtn = `
-            <button type="button" class="seerrfin-request-action-btn seerrfin-request-radarr-btn"
-                data-open-url="${escapeHtml(radarrUrl)}"
-                aria-label="Open ${safeTitle} in Radarr" title="Open in Radarr">
-                ${RADARR_LOGO}
-            </button>`;
+                    <button type="button" class="seerrfin-request-action-btn seerrfin-request-radarr-btn"
+                        data-open-url="${escapeHtml(radarrUrl)}"
+                        aria-label="Open ${safeTitle} in Radarr" title="Open in Radarr">
+                        ${RADARR_LOGO}
+                    </button>
+                `;
             }
         }
 
         let sonarrBtn = '';
+
         if (mediaType === 'tv') {
             const sonarrUrl = getServarrOpenUrl(item);
+
             if (sonarrUrl) {
                 sonarrBtn = `
-            <button type="button" class="seerrfin-request-action-btn seerrfin-request-sonarr-btn"
-                data-open-url="${escapeHtml(sonarrUrl)}"
-                aria-label="Open ${safeTitle} in Sonarr" title="Open in Sonarr">
-                ${SONARR_LOGO}
-            </button>`;
+                    <button type="button" class="seerrfin-request-action-btn seerrfin-request-sonarr-btn"
+                        data-open-url="${escapeHtml(sonarrUrl)}"
+                        aria-label="Open ${safeTitle} in Sonarr" title="Open in Sonarr">
+                        ${SONARR_LOGO}
+                    </button>
+                `;
             }
         }
 
@@ -357,7 +316,8 @@ window.seerrFinLog = window.seerrFinLog || {
                 </button>
                 ${radarrBtn}
                 ${sonarrBtn}
-            </div>`;
+            </div>
+        `;
     }
 
     function mapRequestToDiscoverItem(item) {
@@ -367,15 +327,19 @@ window.seerrFinLog = window.seerrFinLog || {
         if (item.tmdbId) {
             providerIds.Tmdb = String(item.tmdbId);
         }
+
         if (item.posterPath) {
             providerIds.TmdbPosterPath = item.posterPath;
         }
+
         if (item.backdropPath) {
             providerIds.TmdbBackdropPath = item.backdropPath;
         }
+
         if (item.posterUrl) {
             providerIds.JellyseerrPoster = item.posterUrl;
         }
+
         if (item.backdropUrl) {
             providerIds.JellyseerrBackdrop = item.backdropUrl;
         }
@@ -394,25 +358,24 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function renderDiscoverCard(item) {
         const plugin = getPlugin();
-        if (!plugin || !item.tmdbId || typeof plugin.createDiscoverCards !== 'function') {
-            return;
-        }
+
+        if (!plugin || !item.tmdbId || typeof plugin.createDiscoverCards !== 'function') { return; }
 
         return plugin.createDiscoverCards([mapRequestToDiscoverItem(item)], false, getCardOptions());
     }
 
     function shouldUseLandscapeCards() {
         const plugin = getPlugin();
-        return plugin && typeof plugin.shouldUseBackdropThumbnails === 'function'
-            ? plugin.shouldUseBackdropThumbnails()
-            : false;
+
+        return plugin && typeof plugin.shouldUseBackdropThumbnails === 'function' ?
+            plugin.shouldUseBackdropThumbnails() :
+            false;
     }
 
     function formatBytes(bytes) {
         const value = Number(bytes);
-        if (!value || value <= 0) {
-            return '0.0 GB';
-        }
+
+        if (!value || value <= 0) { return '0.0 GB'; }
 
         return (value / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
     }
@@ -423,9 +386,9 @@ window.seerrFinLog = window.seerrFinLog || {
         const mediaFailed = (item.mediaStatusLabel || '').toLowerCase() === 'failed';
 
         if (!raw || !statusKey) {
-            return mediaFailed
-                ? { statusKey: 'failed', statusLabel: 'Failed to find content', percent: 100, isActive: false }
-                : null;
+            return mediaFailed ?
+                { statusKey: 'failed', statusLabel: 'Failed to find content', percent: 100, isActive: false } :
+                null;
         }
 
         return {
@@ -440,9 +403,8 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function renderProgressBlock(item) {
         const progress = getServarrProgress(item);
-        if (!progress) {
-            return;
-        }
+
+        if (!progress) { return; }
 
         const isFailed = progress.statusKey === 'failed' || (item.mediaStatusLabel || '').toLowerCase() === 'failed';
         const percent = isFailed ? 100 : Math.max(0, Math.min(100, Number(progress.percent) || 0));
@@ -452,11 +414,11 @@ window.seerrFinLog = window.seerrFinLog || {
         );
 
         const percentText = isFailed ? 'Failed' : (isTransfer ? `${percent}%` : '0%');
-        const detailText = isFailed
-            ? 'Failed to find content'
-            : (isTransfer
-                ? `${formatBytes(progress.downloadedBytes)}/${formatBytes(progress.totalBytes)}`
-                : (progress.statusLabel || ''));
+        const detailText = isFailed ?
+            'Failed to find content' :
+            (isTransfer ?
+                `${formatBytes(progress.downloadedBytes)}/${formatBytes(progress.totalBytes)}` :
+                (progress.statusLabel || ''));
 
         return `
             <div class="seerrfin-request-progress" data-status="${statusKey}">
@@ -467,7 +429,8 @@ window.seerrFinLog = window.seerrFinLog || {
                     <span class="seerrfin-request-progress-percent">${escapeHtml(percentText)}</span>
                     <span class="seerrfin-request-progress-detail">${escapeHtml(detailText)}</span>
                 </div>
-            </div>`;
+            </div>
+        `;
     }
 
     function renderContentBlock(item, isLandscape) {
@@ -475,9 +438,9 @@ window.seerrFinLog = window.seerrFinLog || {
         const safeTitle = escapeHtml(item.title || 'Unknown');
         const timeAgo = item.createdAt ? escapeHtml(formatRelativeDate(item.createdAt)) : '';
         const avatarUrl = getAvatarUrl(item.requestedByAvatar);
-        const avatarHtml = avatarUrl
-            ? `<img class="seerrfin-request-avatar" src="${escapeHtml(avatarUrl)}" alt="" loading="lazy" onerror="this.remove()">`
-            : '';
+        const avatarHtml = avatarUrl ?
+            `<img class="seerrfin-request-avatar" src="${escapeHtml(avatarUrl)}" alt="" loading="lazy" onerror="this.remove()">` :
+            '';
 
         const chips = [
             `<span class="seerrfin-request-chip ${chipClassForStatus(statusLabel)}">${escapeHtml(statusLabel)}</span>`
@@ -504,17 +467,21 @@ window.seerrFinLog = window.seerrFinLog || {
         return `
             <div class="seerrfin-request-content">
                 <div class="seerrfin-request-title">
-                    <span title="${safeTitle}">${safeTitle}</span>${yearHtml}
+                    <span title="${safeTitle}">${safeTitle}</span>
+                    ${yearHtml}
                 </div>
                 <div class="seerrfin-request-chips">${chips.join('')}</div>
                 <div class="seerrfin-request-meta">
-                    <span>Requested by</span> ${avatarHtml}
-                    <span class="seerrfin-request-meta-light">${escapeHtml(item.requestedBy || 'Unknown')}</span>${timeAgoHtml}
+                    <span>Requested by</span>
+                    ${avatarHtml}
+                    <span class="seerrfin-request-meta-light">${escapeHtml(item.requestedBy || 'Unknown')}</span>
+                    ${timeAgoHtml}
                 </div>
                 ${seasonsHtml}
                 ${progressSpacerHtml}
                 ${progressHtml}
-            </div>`;
+            </div>
+        `;
     }
 
     function renderRequestCard(item) {
@@ -522,9 +489,7 @@ window.seerrFinLog = window.seerrFinLog || {
         const layoutClass = isLandscape ? 'seerrfin-request-box--landscape' : 'seerrfin-request-box--portrait';
         const discoverCard = renderDiscoverCard(item);
 
-        if (!discoverCard) {
-            return;
-        }
+        if (!discoverCard) { return; }
 
         return `
             <article class="seerrfin-request-box ${layoutClass}">
@@ -532,14 +497,14 @@ window.seerrFinLog = window.seerrFinLog || {
                     <div class="seerrfin-request-card-slot">${discoverCard}${renderCardActions(item) || ''}</div>
                     ${renderContentBlock(item, isLandscape)}
                 </div>
-            </article>`;
+            </article>
+        `;
     }
 
     function hydrateRequestCards(container) {
         const plugin = getPlugin();
-        if (!plugin || !container) {
-            return;
-        }
+
+        if (!plugin || !container) { return; }
 
         if (typeof plugin.initLazyImages === 'function') {
             plugin.initLazyImages(container);
@@ -551,34 +516,27 @@ window.seerrFinLog = window.seerrFinLog || {
     }
 
     function matchesFilter(item, filterId) {
-        if (filterId === 'all') {
-            return true;
-        }
+        if (filterId === 'all') { return true; }
 
-        if (filterId === 'comingsoon') {
-            return item.isComingSoon === true;
-        }
+        if (filterId === 'comingsoon') { return item.isComingSoon === true; }
 
         const label = (item.mediaStatusLabel || '').toLowerCase();
 
-        if (filterId === 'pending') {
-            return label.includes('pending');
-        }
+        if (filterId === 'pending') { return label.includes('pending'); }
 
         const settings = getRequestsAdvanced();
 
         if (filterId === 'available') {
-            if (settings.splitPartiallyAvailableFilter === true) {
-                return label === 'available';
-            }
+            if (settings.splitPartiallyAvailableFilter === true) { return label === 'available'; }
+
             return label.includes('available');
         }
 
         if (filterId === 'processing') {
             const isProcessing = label === 'processing' || label === 'approved';
-            if (settings.includePartialsInProcessingFilter === true) {
-                return isProcessing || label === 'partially available';
-            }
+
+            if (settings.includePartialsInProcessingFilter === true) { return isProcessing || label === 'partially available'; }
+
             return label !== 'partially available' && isProcessing;
         }
 
@@ -595,7 +553,8 @@ window.seerrFinLog = window.seerrFinLog || {
         return `
             <button type="button" class="raised emby-button seerrfin-requests-prev" ${page <= 1 ? 'disabled' : ''}>Previous</button>
             <span class="seerrfin-requests-page-info">Page ${page} of ${totalPages}</span>
-            <button type="button" class="raised emby-button seerrfin-requests-next" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
+            <button type="button" class="raised emby-button seerrfin-requests-next" ${page >= totalPages ? 'disabled' : ''}>Next</button>
+        `;
     }
 
     function updatePagination(container, totalPages) {
@@ -605,6 +564,7 @@ window.seerrFinLog = window.seerrFinLog || {
             if (pagination) {
                 pagination.remove();
             }
+
             return;
         }
 
@@ -621,29 +581,32 @@ window.seerrFinLog = window.seerrFinLog || {
         updateFilters(container);
 
         const body = container.querySelector('.seerrfin-requests-body');
-        if (!body) {
-            return;
-        }
+
+        if (!body) { return; }
 
         if (!state.pageRequests.length) {
             body.innerHTML = `<div class="seerrfin-empty-row padded-left">No requests found.</div>`;
             updatePagination(container, state.totalPages);
+
             return;
         }
 
         const cards = state.pageRequests.map(renderRequestCard).filter(Boolean).join('');
+
         if (!cards) {
             body.innerHTML = `<div class="seerrfin-empty-row padded-left">No requests found.</div>`;
             updatePagination(container, state.totalPages);
+
             return;
         }
 
-        const gridClass = shouldUseLandscapeCards()
-            ? ' seerrfin-requests-grid--landscape'
-            : ' seerrfin-requests-grid--portrait';
+        const gridClass = shouldUseLandscapeCards() ?
+            ' seerrfin-requests-grid--landscape' :
+            ' seerrfin-requests-grid--portrait';
 
         body.innerHTML = `
-            <div class="seerrfin-requests-grid${gridClass} padded-left padded-right">${cards}</div>`;
+            <div class="seerrfin-requests-grid${gridClass} padded-left padded-right">${cards}</div>
+        `;
 
         hydrateRequestCards(body);
         updatePagination(container, state.totalPages);
@@ -651,10 +614,7 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function fetchRequestsPage() {
         const pageSize = getPageSize();
-        const params = {
-            take: pageSize,
-            skip: (state.page - 1) * pageSize
-        };
+        const params = { take: pageSize, skip: (state.page - 1) * pageSize };
 
         if (state.filter && state.filter !== 'all') {
             params.filter = state.filter;
@@ -666,15 +626,15 @@ window.seerrFinLog = window.seerrFinLog || {
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
             }
+
             return response.json();
         });
     }
 
     function setReloadButtonState(container, mode) {
         const reloadBtn = container && container.querySelector('.seerrfin-requests-reload');
-        if (!reloadBtn) {
-            return;
-        }
+
+        if (!reloadBtn) { return; }
 
         if (state.reloadResultTimer) {
             clearTimeout(state.reloadResultTimer);
@@ -682,15 +642,18 @@ window.seerrFinLog = window.seerrFinLog || {
         }
 
         const icon = reloadBtn.querySelector('.material-icons');
+
         reloadBtn.classList.remove('is-loading', 'is-success', 'is-error');
 
         if (mode === 'loading') {
             reloadBtn.disabled = true;
             reloadBtn.classList.add('is-loading');
             reloadBtn.setAttribute('aria-busy', 'true');
+
             if (icon) {
                 icon.textContent = 'refresh';
             }
+
             return;
         }
 
@@ -698,40 +661,43 @@ window.seerrFinLog = window.seerrFinLog || {
             reloadBtn.disabled = true;
             reloadBtn.classList.add(mode === 'success' ? 'is-success' : 'is-error');
             reloadBtn.setAttribute('aria-busy', 'false');
+
             if (icon) {
                 icon.textContent = mode === 'success' ? 'check' : 'close';
             }
+
             state.reloadResultTimer = setTimeout(function () {
                 state.reloadResultTimer = null;
                 setReloadButtonState(container, 'idle');
             }, 2000);
+
             return;
         }
 
         reloadBtn.disabled = false;
         reloadBtn.setAttribute('aria-busy', 'false');
+
         if (icon) {
             icon.textContent = 'refresh';
         }
     }
 
     function loadRequests(container, options) {
-        if (!container) {
-            return;
-        }
+        if (!container) { return; }
 
         options = options || {};
+
         const keepVisible = options.keepVisible === true;
 
-        if (keepVisible && state.isLoading) {
-            return;
-        }
+        if (keepVisible && state.isLoading) { return; }
 
         const loadId = ++state.loadId;
+
         state.isLoading = true;
         setReloadButtonState(container, 'loading');
 
         const body = container.querySelector('.seerrfin-requests-body');
+
         // Refresh keeps current cards on screen; only initial/filter/page loads show Loading...
         if (body && !keepVisible) {
             body.innerHTML = `<div class="seerrfin-loading-row padded-left">Loading...</div>`;
@@ -740,14 +706,11 @@ window.seerrFinLog = window.seerrFinLog || {
         log.info('loading requests tab (page ' + state.page + ', filter ' + state.filter + ')');
         fetchRequestsPage()
             .then(function (data) {
-                if (loadId !== state.loadId || !container.isConnected) {
-                    return;
-                }
+                if (loadId !== state.loadId || !container.isConnected) { return; }
 
-                state.pageRequests = (data.requests || []).filter(function (item) {
-                    return matchesFilter(item, state.filter);
-                });
+                state.pageRequests = (data.requests || []).filter(function (item) { return matchesFilter(item, state.filter); });
                 state.totalPages = Math.max(1, Number(data.totalPages) || 1);
+
                 if (state.page > state.totalPages) {
                     state.page = state.totalPages;
                 }
@@ -759,12 +722,11 @@ window.seerrFinLog = window.seerrFinLog || {
             .catch(function (err) {
                 log.error('requests ' + (keepVisible ? 'refresh' : 'load') + ' failed (page ' + state.page + ', filter ' + state.filter + ')', err);
 
-                if (loadId !== state.loadId || !container.isConnected) {
-                    return;
-                }
+                if (loadId !== state.loadId || !container.isConnected) { return; }
 
                 if (keepVisible) {
                     setReloadButtonState(container, 'error');
+
                     return;
                 }
 
@@ -772,9 +734,11 @@ window.seerrFinLog = window.seerrFinLog || {
                 state.totalPages = 1;
                 updateFilters(container);
                 updatePagination(container, 1);
+
                 if (body) {
                     body.innerHTML = `<div class="seerrfin-empty-row padded-left">Could not load requests. Check Seerr settings.</div>`;
                 }
+
                 setReloadButtonState(container, 'idle');
             })
             .then(function () {
@@ -793,28 +757,24 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function refreshIfActive(options) {
         options = options || {};
+
         const reason = options.reason || 'manual';
         const settings = getRefreshSettings();
 
-        if (reason === 'interval' && settings.intervalSeconds <= 0) {
-            return;
-        }
-        if (reason === 'visibility' && !settings.onVisibility) {
-            return;
-        }
-        if (reason === 'tab' && !settings.onTabShow) {
-            return;
-        }
+        if (reason === 'interval' && settings.intervalSeconds <= 0) { return; }
+
+        if (reason === 'visibility' && !settings.onVisibility) { return; }
+
+        if (reason === 'tab' && !settings.onTabShow) { return; }
 
         const container = findActiveContainer();
-        if (!container || !container.querySelector('.seerrfin-requests-panel')) {
-            return;
-        }
+
+        if (!container || !container.querySelector('.seerrfin-requests-panel')) { return; }
 
         const now = Date.now();
-        if (reason !== 'manual' && now - state.lastAutoRefreshAt < AUTO_REFRESH_DEBOUNCE_MS) {
-            return;
-        }
+
+        if (reason !== 'manual' && now - state.lastAutoRefreshAt < AUTO_REFRESH_DEBOUNCE_MS) { return; }
+
         state.lastAutoRefreshAt = now;
 
         loadRequests(container, { keepVisible: true });
@@ -823,25 +783,23 @@ window.seerrFinLog = window.seerrFinLog || {
     function startAutoRefresh() {
         stopAutoRefresh();
 
-        if (document.hidden) {
-            return;
-        }
+        if (document.hidden) { return; }
 
         const container = findActiveContainer();
-        if (!container || !container.querySelector('.seerrfin-requests-panel')) {
-            return;
-        }
+
+        if (!container || !container.querySelector('.seerrfin-requests-panel')) { return; }
 
         const settings = getRefreshSettings();
-        if (settings.intervalSeconds <= 0) {
-            return;
-        }
+
+        if (settings.intervalSeconds <= 0) { return; }
 
         state.autoRefreshTimer = setInterval(function () {
             if (!findActiveContainer()) {
                 stopAutoRefresh();
+
                 return;
             }
+
             refreshIfActive({ reason: 'interval' });
         }, settings.intervalSeconds * 1000);
     }
@@ -849,10 +807,12 @@ window.seerrFinLog = window.seerrFinLog || {
     function renderRequestsPanel() {
         const filterButtons = FILTERS.map(function (filter) {
             const activeClass = state.filter === filter.id ? ' is-active' : '';
+
             return `
                 <button type="button" class="seerrfin-requests-filter${activeClass}" data-filter="${filter.id}">
                     ${escapeHtml(filter.label)}
-                </button>`;
+                </button>
+            `;
         }).join('');
 
         return `
@@ -867,13 +827,12 @@ window.seerrFinLog = window.seerrFinLog || {
                     ${filterButtons}
                 </div>
             </div>
-            <div class="seerrfin-requests-body"></div>`;
+            <div class="seerrfin-requests-body"></div>
+        `;
     }
 
     function mount(container) {
-        if (container.querySelector('.seerrfin-requests-panel')) {
-            return;
-        }
+        if (container.querySelector('.seerrfin-requests-panel')) { return; }
 
         log.info('adding requests panel');
         container.innerHTML = renderRequestsPanel();
@@ -881,96 +840,104 @@ window.seerrFinLog = window.seerrFinLog || {
         bindContainerEvents(container);
 
         const plugin = getPlugin();
-        const settingsPromise = plugin && typeof plugin.loadDisplaySettings === 'function'
-            ? plugin.loadDisplaySettings().catch(function (err) {
+        const settingsPromise = plugin && typeof plugin.loadDisplaySettings === 'function' ?
+            plugin.loadDisplaySettings().catch(function (err) {
                 log.warn('requests tab display settings failed', err);
-                return null;
-            })
-            : Promise.resolve();
 
-        settingsPromise.then(function () {
-            return loadClientSettings();
-        }).then(function () {
+                return null;
+            }) :
+            Promise.resolve();
+
+        settingsPromise.then(function () { return loadClientSettings(); }).then(function () {
             loadRequests(container);
             startAutoRefresh();
         });
     }
 
     function bindContainerEvents(container) {
-        if (container.dataset.seerrfinRequestsBound === 'true') {
-            return;
-        }
-        container.dataset.seerrfinRequestsBound = 'true';
+        if (container.dataset.seerrfinRequestsBound === 'true') { return; }
 
+        container.dataset.seerrfinRequestsBound = 'true';
         container.addEventListener('click', function (event) {
             const reloadBtn = event.target.closest('.seerrfin-requests-reload');
+
             if (reloadBtn) {
                 event.preventDefault();
                 loadRequests(container, { keepVisible: true });
+
                 return;
             }
 
             const modalBtn = event.target.closest('.seerrfin-request-modal-btn');
+
             if (modalBtn) {
                 event.preventDefault();
                 event.stopPropagation();
-                openRequestModal(
-                    modalBtn.getAttribute('data-tmdb-id'),
-                    modalBtn.getAttribute('data-media-type')
-                );
+                openRequestModal(modalBtn.getAttribute('data-tmdb-id'), modalBtn.getAttribute('data-media-type'));
+
                 return;
             }
 
             const seerrBtn = event.target.closest('.seerrfin-request-seerr-btn');
+
             if (seerrBtn) {
                 event.preventDefault();
                 event.stopPropagation();
-                openJellyseerrManage(
-                    seerrBtn.getAttribute('data-tmdb-id'),
-                    seerrBtn.getAttribute('data-media-type')
-                );
+                openJellyseerrManage(seerrBtn.getAttribute('data-tmdb-id'), seerrBtn.getAttribute('data-media-type'));
+
                 return;
             }
 
             const radarrBtn = event.target.closest('.seerrfin-request-radarr-btn');
+
             if (radarrBtn) {
                 event.preventDefault();
                 event.stopPropagation();
                 openServarrUrl(radarrBtn.getAttribute('data-open-url'), 'Radarr');
+
                 return;
             }
 
             const sonarrBtn = event.target.closest('.seerrfin-request-sonarr-btn');
+
             if (sonarrBtn) {
                 event.preventDefault();
                 event.stopPropagation();
                 openServarrUrl(sonarrBtn.getAttribute('data-open-url'), 'Sonarr');
+
                 return;
             }
 
             const playBtn = event.target.closest('.seerrfin-request-play-btn');
+
             if (playBtn) {
                 event.preventDefault();
                 event.stopPropagation();
                 navigateToJellyfinItem(playBtn.getAttribute('data-jellyfin-item-id'));
+
                 return;
             }
 
             const tab = event.target.closest('.seerrfin-requests-filter');
+
             if (tab) {
                 event.preventDefault();
+
                 const filter = tab.getAttribute('data-filter');
+
                 if (filter && filter !== state.filter) {
                     state.filter = filter;
                     state.page = 1;
                     loadRequests(container);
                 }
+
                 return;
             }
 
             if (event.target.closest('.seerrfin-requests-prev') && state.page > 1) {
                 state.page -= 1;
                 loadRequests(container);
+
                 return;
             }
 
@@ -983,19 +950,25 @@ window.seerrFinLog = window.seerrFinLog || {
 
     function ensureMounted(options) {
         options = options || {};
+
         const container = findActiveContainer();
+
         if (!container) {
             stopAutoRefresh();
+
             return;
         }
 
         const alreadyMounted = !!container.querySelector('.seerrfin-requests-panel');
+
         if (!alreadyMounted) {
             mount(container);
+
             return;
         }
 
         startAutoRefresh();
+
         if (options.tabShown) {
             refreshIfActive({ reason: 'tab' });
         }
@@ -1004,6 +977,7 @@ window.seerrFinLog = window.seerrFinLog || {
     function onVisibilityChange() {
         if (document.hidden) {
             stopAutoRefresh();
+
             return;
         }
 
@@ -1014,14 +988,13 @@ window.seerrFinLog = window.seerrFinLog || {
     function init() {
         if (typeof ApiClient === 'undefined' || !getPlugin()) {
             setTimeout(init, 200);
+
             return;
         }
 
         log.info('requests module init');
         window.__seerrFinRequestsEnsureMounted = ensureMounted;
-        document.addEventListener('viewshow', function () {
-            ensureMounted();
-        });
+        document.addEventListener('viewshow', function () { ensureMounted(); });
         document.addEventListener('visibilitychange', onVisibilityChange);
         ensureMounted();
     }

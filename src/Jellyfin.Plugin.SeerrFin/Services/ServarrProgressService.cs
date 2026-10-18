@@ -21,126 +21,163 @@ public sealed class ServarrProgressService
     public async Task<JArray> GetServerOptionsAsync(string type, CancellationToken cancellationToken)
     {
         JArray? servers = await GetSeerrServersAsync(SeerrFinPlugin.Instance.Configuration, type, cancellationToken).ConfigureAwait(false);
-        return new JArray(servers?.OfType<JObject>()
-            .Where(server => server.Value<int?>("id") != null)
-            .Select(server => new JObject
-            {
-                ["serverId"] = server["id"],
-                ["serverName"] = server.Value<string>("name") ?? $"Server {server.Value<int>("id")}",
-                ["is4k"] = server.Value<bool?>("is4k") ?? false
-            }) ?? Enumerable.Empty<JObject>());
+
+        return new JArray(
+            servers
+                ?.OfType<JObject>().Where(server => server.Value<int?>("id") != null)
+                .Select(server => new JObject
+                {
+                    ["serverId"] = server["id"],
+                    ["serverName"] = server.Value<string>("name") ?? $"Server {server.Value<int>("id")}",
+                    ["is4k"] = server.Value<bool?>("is4k") ?? false
+                })
+                ?? Enumerable.Empty<JObject>()
+        );
     }
 
     public async Task EnrichRequestsAsync(JArray requests, CancellationToken cancellationToken)
     {
-        List<ServarrRequestContext> contexts = requests
-            .OfType<JObject>()
-            .Select(BuildContext)
-            .OfType<ServarrRequestContext>()
-            .ToList();
+        List<ServarrRequestContext> contexts = requests.OfType<JObject>().Select(BuildContext).OfType<ServarrRequestContext>().ToList();
         if (contexts.Count == 0)
         {
             return;
         }
 
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
-        await Task.WhenAll(new[] { "radarr", "sonarr" }.Select(async type =>
-        {
-            List<ServarrRequestContext> typedContexts = contexts
-                .Where(context => (context.Type == "tv") == (type == "sonarr"))
-                .ToList();
-            if (typedContexts.Count == 0)
-            {
-                return;
-            }
-
-            List<ServarrInstanceConfiguration> instances = await GetInstancesAsync(config, type, cancellationToken).ConfigureAwait(false);
-            HashSet<bool> fallbackKinds = new();
-            if (instances.Count == 1 && typedContexts.Any(context => context.ServiceId == null))
-            {
-                JArray? servers = await GetSeerrServersAsync(config, type, cancellationToken).ConfigureAwait(false);
-                foreach (IGrouping<bool, JObject> group in (servers?.OfType<JObject>() ?? Enumerable.Empty<JObject>())
-                    .GroupBy(server => server.Value<bool?>("is4k") ?? false))
+        await Task.WhenAll(
+                new[] { "radarr", "sonarr" }.Select(async type =>
                 {
-                    if (group.Count() == 1 && group.Single().Value<int?>("id") == instances[0].ServerId)
+                    List<ServarrRequestContext> typedContexts = contexts.Where(context => (context.Type == "tv") == (type == "sonarr"))
+                        .ToList();
+                    if (typedContexts.Count == 0)
                     {
-                        fallbackKinds.Add(group.Key);
-                    }
-                }
-            }
-            await Task.WhenAll(instances.Select(async instance =>
-            {
-                List<ServarrRequestContext> scoped = typedContexts.Where(context => context.ServiceId == instance.ServerId
-                    || (context.ServiceId == null && fallbackKinds.Contains(context.Is4k))).ToList();
-                if (scoped.Count == 0)
-                {
-                    return;
-                }
-
-                bool hasExternalUrl = NormalizeBrowseUrl(instance.ExternalUrl) != null;
-                string browseUrl = NormalizeBrowseUrl(instance.ExternalUrl) ?? NormalizeBrowseUrl(instance.Url)!;
-                foreach (ServarrRequestContext context in scoped)
-                {
-                    if (hasExternalUrl || context.ServiceUrl == null)
-                    {
-                        context.Request["servarrUrl"] = $"{browseUrl}/add/new?term=tmdb:{context.TmdbId}";
-                    }
-                }
-
-                string mediaKey = string.Join(",", scoped.Select(context => $"{context.TmdbId}:{context.ExternalServiceId}").Distinct().Order());
-                string cacheKey = $"{type}\n{instance.Url.Trim()}\n{instance.ApiKey.Trim()}\n{browseUrl}\n{mediaKey}";
-                object? snapshot = await GetCachedAsync<object>(cacheKey, async () =>
-                {
-                    await _snapshotSlots.WaitAsync().ConfigureAwait(false);
-                    try
-                    {
-                        using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(20));
-                        return type == "sonarr"
-                            ? await LoadSonarrSnapshotAsync(instance, scoped, timeout.Token).ConfigureAwait(false)
-                            : await LoadRadarrSnapshotAsync(instance, scoped, timeout.Token).ConfigureAwait(false);
-                    }
-                    finally
-                    {
-                        _snapshotSlots.Release();
-                    }
-                }, cancellationToken).ConfigureAwait(false);
-
-                foreach (ServarrRequestContext context in scoped)
-                {
-                    ServarrProgressInfo? progress = type == "sonarr"
-                        ? BuildSeriesProgress(context, snapshot as SonarrSnapshot)
-                        : BuildMovieProgress(context, snapshot as RadarrSnapshot);
-                    if (progress == null)
-                    {
-                        continue;
+                        return;
                     }
 
-                    if (progress.OpenUrl != null && (hasExternalUrl || context.ServiceUrl == null))
+                    List<ServarrInstanceConfiguration> instances = await GetInstancesAsync(config, type, cancellationToken)
+                        .ConfigureAwait(false);
+                    HashSet<bool> fallbackKinds = new();
+
+                    if (instances.Count == 1 && typedContexts.Any(context => context.ServiceId == null))
                     {
-                        context.Request["servarrUrl"] = progress.OpenUrl;
+                        JArray? servers = await GetSeerrServersAsync(config, type, cancellationToken).ConfigureAwait(false);
+
+                        foreach (
+                            IGrouping<bool, JObject> group in (
+                                servers?.OfType<JObject>() ?? Enumerable.Empty<JObject>()
+                            ).GroupBy(server => server.Value<bool?>("is4k") ?? false)
+                        )
+                        {
+                            if (group.Count() == 1 && group.Single().Value<int?>("id") == instances[0].ServerId)
+                            {
+                                fallbackKinds.Add(group.Key);
+                            }
+                        }
                     }
-                    context.Request["servarrProgress"] = new JObject
-                    {
-                        ["statusLabel"] = progress.StatusLabel,
-                        ["statusKey"] = progress.StatusKey,
-                        ["percent"] = progress.Percent,
-                        ["downloadedBytes"] = progress.DownloadedBytes,
-                        ["totalBytes"] = progress.TotalBytes,
-                        ["isActive"] = progress.IsActive,
-                        ["openUrl"] = context.Request["servarrUrl"]
-                    };
-                }
-            })).ConfigureAwait(false);
-        })).ConfigureAwait(false);
+
+                    await Task.WhenAll(
+                            instances.Select(async instance =>
+                            {
+                                List<ServarrRequestContext> scoped = typedContexts
+                                    .Where(context =>
+                                        context.ServiceId == instance.ServerId
+                                        || (context.ServiceId == null && fallbackKinds.Contains(context.Is4k))
+                                    )
+                                    .ToList();
+                                if (scoped.Count == 0)
+                                {
+                                    return;
+                                }
+
+                                bool hasExternalUrl = NormalizeBrowseUrl(instance.ExternalUrl) != null;
+                                string browseUrl = NormalizeBrowseUrl(instance.ExternalUrl) ?? NormalizeBrowseUrl(instance.Url)!;
+
+                                foreach (ServarrRequestContext context in scoped)
+                                {
+                                    if (hasExternalUrl || context.ServiceUrl == null)
+                                    {
+                                        context.Request["servarrUrl"] = $"{browseUrl}/add/new?term=tmdb:{context.TmdbId}";
+                                    }
+                                }
+
+                                string mediaKey = string.Join(
+                                    ",",
+                                    scoped.Select(context => $"{context.TmdbId}:{context.ExternalServiceId}").Distinct().Order()
+                                );
+                                string cacheKey = $"{type}\n{instance.Url.Trim()}\n{instance.ApiKey.Trim()}\n{browseUrl}\n{mediaKey}";
+                                object? snapshot = await GetCachedAsync<object>(
+                                        cacheKey,
+                                        async () =>
+                                        {
+                                            await _snapshotSlots.WaitAsync().ConfigureAwait(false);
+
+                                            try
+                                            {
+                                                using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(20));
+
+                                                return type == "sonarr"
+                                                    ? await LoadSonarrSnapshotAsync(instance, scoped, timeout.Token).ConfigureAwait(false)
+                                                    : await LoadRadarrSnapshotAsync(instance, scoped, timeout.Token).ConfigureAwait(false);
+                                            }
+                                            finally
+                                            {
+                                                _snapshotSlots.Release();
+                                            }
+                                        },
+                                        cancellationToken
+                                    )
+                                    .ConfigureAwait(false);
+
+                                foreach (ServarrRequestContext context in scoped)
+                                {
+                                    ServarrProgressInfo? progress =
+                                        type == "sonarr"
+                                            ? BuildSeriesProgress(context, snapshot as SonarrSnapshot)
+                                            : BuildMovieProgress(context, snapshot as RadarrSnapshot);
+                                    if (progress == null)
+                                    {
+                                        continue;
+                                    }
+
+                                    if (progress.OpenUrl != null && (hasExternalUrl || context.ServiceUrl == null))
+                                    {
+                                        context.Request["servarrUrl"] = progress.OpenUrl;
+                                    }
+
+                                    context.Request["servarrProgress"] = new JObject
+                                    {
+                                        ["statusLabel"] = progress.StatusLabel,
+                                        ["statusKey"] = progress.StatusKey,
+                                        ["percent"] = progress.Percent,
+                                        ["downloadedBytes"] = progress.DownloadedBytes,
+                                        ["totalBytes"] = progress.TotalBytes,
+                                        ["isActive"] = progress.IsActive,
+                                        ["openUrl"] = context.Request["servarrUrl"]
+                                    };
+                                }
+                            })
+                        )
+                        .ConfigureAwait(false);
+                })
+            )
+            .ConfigureAwait(false);
     }
 
-    private async Task<List<ServarrInstanceConfiguration>> GetInstancesAsync(PluginConfiguration config, string type, CancellationToken cancellationToken)
+    private async Task<List<ServarrInstanceConfiguration>> GetInstancesAsync(
+        PluginConfiguration config,
+        string type,
+        CancellationToken cancellationToken
+    )
     {
         List<ServarrInstanceConfiguration>? configured = type == "sonarr" ? config.SonarrInstances : config.RadarrInstances;
         if (configured is { Count: > 0 })
         {
             return configured
-                .Where(instance => instance.ServerId >= 0 && NormalizeBrowseUrl(instance.Url) != null && !string.IsNullOrWhiteSpace(instance.ApiKey))
+                .Where(instance =>
+                    instance.ServerId >= 0
+                    && NormalizeBrowseUrl(instance.Url) != null
+                    && !string.IsNullOrWhiteSpace(instance.ApiKey)
+                )
                 .GroupBy(instance => instance.ServerId)
                 .Where(group => group.Count() == 1)
                 .Select(group => group.Single())
@@ -149,31 +186,50 @@ public sealed class ServarrProgressService
 
         string? url = NormalizeBrowseUrl(type == "sonarr" ? config.SonarrUrl : config.RadarrUrl);
         string? apiKey = type == "sonarr" ? config.SonarrApiKey : config.RadarrApiKey;
-        if (url == null || string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(config.JellyseerrUrl) || string.IsNullOrWhiteSpace(config.JellyseerrApiKey))
+        if (
+            url == null
+            || string.IsNullOrWhiteSpace(apiKey)
+            || string.IsNullOrWhiteSpace(config.JellyseerrUrl)
+            || string.IsNullOrWhiteSpace(config.JellyseerrApiKey)
+        )
         {
             return new();
         }
 
         JArray? servers = await GetSeerrServersAsync(config, type, cancellationToken).ConfigureAwait(false);
         List<JObject> candidates = servers?.OfType<JObject>().Where(server => server.Value<int?>("id") != null).ToList() ?? new();
-        List<JObject> matching = candidates.Where(server =>
-        {
-            string scheme = server.Value<bool?>("useSsl") == true ? "https" : "http";
-            string connectionUrl = $"{scheme}://{server.Value<string>("hostname")}:{server.Value<int?>("port")}{server.Value<string>("baseUrl")}";
-            return string.Equals(url, NormalizeBrowseUrl(connectionUrl), StringComparison.OrdinalIgnoreCase)
-                || string.Equals(url, NormalizeBrowseUrl(server.Value<string>("externalUrl")), StringComparison.OrdinalIgnoreCase);
-        }).ToList();
-        JObject? match = matching.Count == 1 ? matching[0] : candidates.Count == 1 ? candidates[0] : null;
-        return match == null ? new() : new()
-        {
-            new ServarrInstanceConfiguration { ServerId = match.Value<int>("id"), Url = url, ApiKey = apiKey }
-        };
+        List<JObject> matching = candidates
+            .Where(server =>
+            {
+                string scheme = server.Value<bool?>("useSsl") == true ? "https" : "http";
+                string connectionUrl =
+                    $"{scheme}://{server.Value<string>("hostname")}:{server.Value<int?>("port")}{server.Value<string>("baseUrl")}";
+
+                return string.Equals(url, NormalizeBrowseUrl(connectionUrl), StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(url, NormalizeBrowseUrl(server.Value<string>("externalUrl")), StringComparison.OrdinalIgnoreCase);
+            })
+            .ToList();
+        JObject? match = matching.Count == 1 ? matching[0]
+            : candidates.Count == 1 ? candidates[0] : null;
+
+        return match == null
+            ? new()
+            : new() { new ServarrInstanceConfiguration
+                {
+                    ServerId = match.Value<int>("id"),
+                    Url = url,
+                    ApiKey = apiKey
+                } };
     }
 
     private Task<JArray?> GetSeerrServersAsync(PluginConfiguration config, string type, CancellationToken cancellationToken) =>
         string.IsNullOrWhiteSpace(config.JellyseerrUrl) || string.IsNullOrWhiteSpace(config.JellyseerrApiKey)
             ? Task.FromResult<JArray?>(null)
-            : GetCachedAsync($"services\n{type}\n{config.JellyseerrUrl}\n{config.JellyseerrApiKey}", () => LoadSeerrServersAsync(config, type), cancellationToken);
+            : GetCachedAsync(
+                $"services\n{type}\n{config.JellyseerrUrl}\n{config.JellyseerrApiKey}",
+                () => LoadSeerrServersAsync(config, type),
+                cancellationToken
+            );
 
     private async Task<JArray?> LoadSeerrServersAsync(PluginConfiguration config, string type)
     {
@@ -182,36 +238,43 @@ public sealed class ServarrProgressService
             using HttpClient client = new() { BaseAddress = new Uri(config.JellyseerrUrl!), Timeout = TimeSpan.FromSeconds(10) };
             client.DefaultRequestHeaders.Add("X-Api-Key", config.JellyseerrApiKey);
             JArray? servers = await GetJsonArrayAsync(client, $"/api/v1/settings/{type}", CancellationToken.None).ConfigureAwait(false);
+
             return servers ?? await GetJsonArrayAsync(client, $"/api/v1/service/{type}", CancellationToken.None).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to resolve legacy {ServerType} connection", type);
+
             return null;
         }
     }
 
-    private async Task<T?> GetCachedAsync<T>(string key, Func<Task<T?>> load, CancellationToken cancellationToken) where T : class
+    private async Task<T?> GetCachedAsync<T>(string key, Func<Task<T?>> load, CancellationToken cancellationToken)
+        where T : class
     {
         CachedRead entry;
+
         lock (_cache)
         {
             foreach (string expired in _cache.Where(item => item.Value.IsExpired).Select(item => item.Key).ToArray())
             {
                 _cache.Remove(expired);
             }
+
             if (!_cache.TryGetValue(key, out entry!))
             {
                 entry = new CachedRead(async () => await load().ConfigureAwait(false));
                 _cache[key] = entry;
             }
         }
+
         return (T?)await entry.Read.Value.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     internal static string? NormalizeBrowseUrl(string? value) =>
         Uri.TryCreate(value?.Trim(), UriKind.Absolute, out Uri? uri) && (uri.Scheme == "http" || uri.Scheme == "https")
-            ? uri.AbsoluteUri.TrimEnd('/') : null;
+            ? uri.AbsoluteUri.TrimEnd('/')
+            : null;
 
     private static ServarrRequestContext? BuildContext(JObject request)
     {
@@ -222,17 +285,29 @@ public sealed class ServarrProgressService
             return null;
         }
 
-        HashSet<int> seasonNumbers = request.Value<JArray>("seasonNumbers")?
-            .Select(v => v.Type == JTokenType.Integer ? v.Value<int>() : (int?)null)
-            .Where(v => v.HasValue)
-            .Select(v => v!.Value)
-            .ToHashSet() ?? new HashSet<int>();
+        HashSet<int> seasonNumbers =
+            request.Value<JArray>("seasonNumbers")
+                ?.Select(v => v.Type == JTokenType.Integer ? v.Value<int>() : (int? )null).Where(v => v.HasValue).Select(v => v!.Value)
+                .ToHashSet()
+            ?? new HashSet<int>();
 
-        return new ServarrRequestContext(request, type, tmdbId.Value, request.Value<int?>("serviceId"), request.Value<int?>("externalServiceId"),
-            request.Value<bool?>("is4k") ?? false, NormalizeBrowseUrl(request.Value<string>("servarrUrl")), seasonNumbers);
+        return new ServarrRequestContext(
+            request,
+            type,
+            tmdbId.Value,
+            request.Value<int?>("serviceId"),
+            request.Value<int?>("externalServiceId"),
+            request.Value<bool?>("is4k") ?? false,
+            NormalizeBrowseUrl(request.Value<string>("servarrUrl")),
+            seasonNumbers
+        );
     }
 
-    private async Task<RadarrSnapshot?> LoadRadarrSnapshotAsync(ServarrInstanceConfiguration instance, IReadOnlyCollection<ServarrRequestContext> contexts, CancellationToken cancellationToken)
+    private async Task<RadarrSnapshot?> LoadRadarrSnapshotAsync(
+        ServarrInstanceConfiguration instance,
+        IReadOnlyCollection<ServarrRequestContext> contexts,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -240,12 +315,12 @@ public sealed class ServarrProgressService
             List<JObject> queueRecords = await FetchAllQueueRecordsAsync(client, includeMovie: true, cancellationToken)
                 .ConfigureAwait(false);
 
-            HashSet<int> tmdbIds = contexts
-                .Where(c => !string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase))
+            HashSet<int> tmdbIds = contexts.Where(c => !string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase))
                 .Select(c => c.TmdbId)
                 .ToHashSet();
 
             Dictionary<int, JObject> moviesByTmdbId = new();
+
             if (tmdbIds.Count > 0)
             {
                 JArray? movies = await GetJsonArrayAsync(client, "movie", cancellationToken).ConfigureAwait(false);
@@ -261,7 +336,12 @@ public sealed class ServarrProgressService
                     }
                 }
 
-                foreach (ServarrRequestContext context in contexts.Where(c => !string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase) && !moviesByTmdbId.ContainsKey(c.TmdbId)))
+                foreach (
+                    ServarrRequestContext context in contexts.Where(c =>
+                        !string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase)
+                        && !moviesByTmdbId.ContainsKey(c.TmdbId)
+                    )
+                )
                 {
                     if (context.ExternalServiceId.HasValue)
                     {
@@ -277,6 +357,7 @@ public sealed class ServarrProgressService
 
             Dictionary<int, List<JObject>> queueByMovieId = new();
             Dictionary<int, List<JObject>> queueByTmdbId = new();
+
             foreach (JObject record in queueRecords)
             {
                 int? movieId = record.Value<int?>("movieId");
@@ -292,16 +373,26 @@ public sealed class ServarrProgressService
                 }
             }
 
-            return new RadarrSnapshot(NormalizeBrowseUrl(instance.ExternalUrl) ?? NormalizeBrowseUrl(instance.Url)!, moviesByTmdbId, queueByMovieId, queueByTmdbId);
+            return new RadarrSnapshot(
+                NormalizeBrowseUrl(instance.ExternalUrl) ?? NormalizeBrowseUrl(instance.Url)!,
+                moviesByTmdbId,
+                queueByMovieId,
+                queueByTmdbId
+            );
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to load Radarr progress snapshot from {RadarrUrl}", instance.Url);
+
             return null;
         }
     }
 
-    private async Task<SonarrSnapshot?> LoadSonarrSnapshotAsync(ServarrInstanceConfiguration instance, IReadOnlyCollection<ServarrRequestContext> contexts, CancellationToken cancellationToken)
+    private async Task<SonarrSnapshot?> LoadSonarrSnapshotAsync(
+        ServarrInstanceConfiguration instance,
+        IReadOnlyCollection<ServarrRequestContext> contexts,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -309,13 +400,13 @@ public sealed class ServarrProgressService
             List<JObject> queueRecords = await FetchAllQueueRecordsAsync(client, includeMovie: false, cancellationToken)
                 .ConfigureAwait(false);
 
-            HashSet<int> tmdbIds = contexts
-                .Where(c => string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase))
+            HashSet<int> tmdbIds = contexts.Where(c => string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase))
                 .Select(c => c.TmdbId)
                 .ToHashSet();
 
             Dictionary<int, JObject> seriesByTmdbId = new();
             Dictionary<int, List<JObject>> episodesBySeriesId = new();
+
             if (tmdbIds.Count > 0)
             {
                 JArray? seriesList = await GetJsonArrayAsync(client, "series", cancellationToken).ConfigureAwait(false);
@@ -345,9 +436,12 @@ public sealed class ServarrProgressService
                     }
                 }
 
-                foreach (ServarrRequestContext context in contexts.Where(c =>
-                             string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase)
-                             && !seriesByTmdbId.ContainsKey(c.TmdbId)))
+                foreach (
+                    ServarrRequestContext context in contexts.Where(c =>
+                        string.Equals(c.Type, "tv", StringComparison.OrdinalIgnoreCase)
+                        && !seriesByTmdbId.ContainsKey(c.TmdbId)
+                    )
+                )
                 {
                     if (context.ExternalServiceId.HasValue)
                     {
@@ -376,6 +470,7 @@ public sealed class ServarrProgressService
             }
 
             Dictionary<int, List<JObject>> queueBySeriesId = new();
+
             foreach (JObject record in queueRecords)
             {
                 int? seriesId = record.Value<int?>("seriesId");
@@ -385,11 +480,17 @@ public sealed class ServarrProgressService
                 }
             }
 
-            return new SonarrSnapshot(NormalizeBrowseUrl(instance.ExternalUrl) ?? NormalizeBrowseUrl(instance.Url)!, seriesByTmdbId, episodesBySeriesId, queueBySeriesId);
+            return new SonarrSnapshot(
+                NormalizeBrowseUrl(instance.ExternalUrl) ?? NormalizeBrowseUrl(instance.Url)!,
+                seriesByTmdbId,
+                episodesBySeriesId,
+                queueBySeriesId
+            );
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to load Sonarr progress snapshot from {SonarrUrl}", instance.Url);
+
             return null;
         }
     }
@@ -404,10 +505,11 @@ public sealed class ServarrProgressService
         JObject? movie = snapshot.MoviesByTmdbId.GetValueOrDefault(context.TmdbId);
         int? movieId = movie?.Value<int?>("id");
 
-        List<JObject> queueItems = movieId.HasValue && snapshot.QueueByMovieId.TryGetValue(movieId.Value, out List<JObject>? byId)
-            ? byId.Where(record => record.Value<JObject>("movie")?.Value<int?>("tmdbId") is not int tmdbId || tmdbId == context.TmdbId).ToList()
-            : snapshot.QueueByTmdbId.GetValueOrDefault(context.TmdbId) ?? new List<JObject>();
-
+        List<JObject> queueItems =
+            movieId.HasValue && snapshot.QueueByMovieId.TryGetValue(movieId.Value, out List<JObject>? byId)
+                ? byId.Where(record => record.Value<JObject>("movie")?.Value<int?>("tmdbId")is not int tmdbId || tmdbId == context.TmdbId)
+                    .ToList()
+                : snapshot.QueueByTmdbId.GetValueOrDefault(context.TmdbId) ?? new List<JObject>();
         if (queueItems.Count > 0)
         {
             return BuildQueueProgress(queueItems, snapshot.BaseUrl, movie, isMovie: true);
@@ -423,7 +525,8 @@ public sealed class ServarrProgressService
             monitored: movie.Value<bool?>("monitored") ?? false,
             isUnreleased: IsUnreleasedMedia(movie.Value<string>("status")),
             sizeOnDisk: movie.Value<long?>("sizeOnDisk") ?? 0,
-            openUrl: BuildServarrOpenUrl(snapshot.BaseUrl, GetTitleSlug(movie), isMovie: true));
+            openUrl: BuildServarrOpenUrl(snapshot.BaseUrl, GetTitleSlug(movie), isMovie: true)
+        );
     }
 
     private static ServarrProgressInfo? BuildSeriesProgress(ServarrRequestContext context, SonarrSnapshot? snapshot)
@@ -439,25 +542,38 @@ public sealed class ServarrProgressService
         }
 
         int? seriesId = series.Value<int?>("id");
-        List<JObject> queueItems = seriesId.HasValue && snapshot.QueueBySeriesId.TryGetValue(seriesId.Value, out List<JObject>? queued)
-            ? FilterQueueBySeasons(queued.Where(record => record.Value<JObject>("series")?.Value<int?>("tmdbId") is not int tmdbId || tmdbId == context.TmdbId), context.SeasonNumbers)
-            : new List<JObject>();
-
+        List<JObject> queueItems =
+            seriesId.HasValue && snapshot.QueueBySeriesId.TryGetValue(seriesId.Value, out List<JObject>? queued)
+                ? FilterQueueBySeasons(
+                    queued.Where(record =>
+                        record.Value<JObject>("series")?.Value<int?>("tmdbId") is not int tmdbId
+                        || tmdbId == context.TmdbId
+                    ),
+                    context.SeasonNumbers
+                )
+                : new List<JObject>();
         if (queueItems.Count > 0)
         {
             return BuildQueueProgress(queueItems, snapshot.BaseUrl, series, isMovie: false);
         }
 
-        List<JObject> episodes = seriesId.HasValue && snapshot.EpisodesBySeriesId.TryGetValue(seriesId.Value, out List<JObject>? eps)
-            ? FilterEpisodesBySeasons(eps, context.SeasonNumbers)
-            : new List<JObject>();
-
+        List<JObject> episodes =
+            seriesId.HasValue && snapshot.EpisodesBySeriesId.TryGetValue(seriesId.Value, out List<JObject>? eps)
+                ? FilterEpisodesBySeasons(eps, context.SeasonNumbers)
+                : new List<JObject>();
         if (episodes.Count == 0)
         {
             bool monitored = series.Value<bool?>("monitored") ?? false;
             long sizeOnDisk = series.Value<long?>("sizeOnDisk") ?? 0;
             bool hasFile = sizeOnDisk > 0;
-            return BuildLibraryProgress(hasFile, monitored, isUnreleased: false, sizeOnDisk, BuildServarrOpenUrl(snapshot.BaseUrl, GetTitleSlug(series), isMovie: false));
+
+            return BuildLibraryProgress(
+                hasFile,
+                monitored,
+                isUnreleased: false,
+                sizeOnDisk,
+                BuildServarrOpenUrl(snapshot.BaseUrl, GetTitleSlug(series), isMovie: false)
+            );
         }
 
         bool anyFile = episodes.Any(e => e.Value<bool?>("hasFile") == true);
@@ -465,10 +581,8 @@ public sealed class ServarrProgressService
         bool anyMonitored = episodes.Any(e => e.Value<bool?>("monitored") == true);
         bool allMonitored = episodes.All(e => e.Value<bool?>("monitored") == true);
         bool anyMissingMonitored = episodes.Any(e => e.Value<bool?>("hasFile") != true && e.Value<bool?>("monitored") == true);
-        bool allUnreleased = episodes.All(e =>
-            IsUnreleasedMedia(e.Value<string>("airDateUtc") ?? e.Value<string>("airDate")));
-        long totalSize = episodes.Where(e => e.Value<bool?>("hasFile") == true)
-            .Sum(e => e.Value<long?>("sizeOnDisk") ?? 0);
+        bool allUnreleased = episodes.All(e => IsUnreleasedMedia(e.Value<string>("airDateUtc") ?? e.Value<string>("airDate")));
+        long totalSize = episodes.Where(e => e.Value<bool?>("hasFile") == true).Sum(e => e.Value<long?>("sizeOnDisk") ?? 0);
         string? seriesOpenUrl = BuildServarrOpenUrl(snapshot.BaseUrl, GetTitleSlug(series), isMovie: false);
 
         if (allUnreleased && !anyFile)
@@ -494,15 +608,20 @@ public sealed class ServarrProgressService
         return BuildLibraryProgress(false, anyMissingMonitored, false, 0, seriesOpenUrl);
     }
 
-    private static ServarrProgressInfo BuildQueueProgress(IReadOnlyCollection<JObject> queueItems, string baseUrl, JObject? media, bool isMovie)
+    private static ServarrProgressInfo BuildQueueProgress(
+        IReadOnlyCollection<JObject> queueItems,
+        string baseUrl,
+        JObject? media,
+        bool isMovie
+    )
     {
         double totalSize = queueItems.Sum(item => item.Value<double?>("size") ?? 0);
         double sizeLeft = queueItems.Sum(item => item.Value<double?>("sizeleft") ?? 0);
         double downloaded = Math.Max(0, totalSize - sizeLeft);
         int percent = totalSize > 0 ? (int)Math.Round(downloaded / totalSize * 100) : 0;
-        string? titleSlug = GetTitleSlug(media)
-            ?? queueItems
-                .Select(item => GetTitleSlug(isMovie ? item["movie"] as JObject : item["series"] as JObject))
+        string? titleSlug =
+            GetTitleSlug(media)
+            ?? queueItems.Select(item => GetTitleSlug(isMovie ? item["movie"] as JObject : item["series"] as JObject))
                 .FirstOrDefault(slug => !string.IsNullOrWhiteSpace(slug));
 
         return new ServarrProgressInfo
@@ -517,7 +636,13 @@ public sealed class ServarrProgressService
         };
     }
 
-    private static ServarrProgressInfo BuildLibraryProgress(bool hasFile, bool monitored, bool isUnreleased, long sizeOnDisk, string? openUrl = null)
+    private static ServarrProgressInfo BuildLibraryProgress(
+        bool hasFile,
+        bool monitored,
+        bool isUnreleased,
+        long sizeOnDisk,
+        string? openUrl = null
+    )
     {
         if (isUnreleased)
         {
@@ -591,10 +716,7 @@ public sealed class ServarrProgressService
 
     private static string? GetTitleSlug(JObject? media) => media?.Value<string>("titleSlug");
 
-    private static string? BuildServarrOpenUrl(string baseUrl, string? titleSlug, bool isMovie) =>
-        !string.IsNullOrWhiteSpace(titleSlug)
-            ? $"{baseUrl}/{(isMovie ? "movie" : "series")}/{titleSlug.Trim()}"
-            : null;
+    private static string? BuildServarrOpenUrl(string baseUrl, string? titleSlug, bool isMovie) => !string.IsNullOrWhiteSpace(titleSlug) ? $"{baseUrl}/{(isMovie ? "movie" : "series")}/{titleSlug.Trim()}" : null;
 
     private static bool IsUnreleasedMedia(string? value)
     {
@@ -603,8 +725,10 @@ public sealed class ServarrProgressService
             return false;
         }
 
-        if (string.Equals(value, "announced", StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, "inCinemas", StringComparison.OrdinalIgnoreCase))
+        if (
+            string.Equals(value, "announced", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(value, "inCinemas", StringComparison.OrdinalIgnoreCase)
+        )
         {
             return true;
         }
@@ -624,6 +748,7 @@ public sealed class ServarrProgressService
             .Where(item =>
             {
                 int? seasonNumber = item.Value<JObject>("episode")?.Value<int?>("seasonNumber");
+
                 return seasonNumber.HasValue && seasonNumbers.Contains(seasonNumber.Value);
             })
             .ToList();
@@ -631,23 +756,32 @@ public sealed class ServarrProgressService
 
     private static List<JObject> FilterEpisodesBySeasons(IEnumerable<JObject> episodes, HashSet<int> seasonNumbers)
     {
-        bool includeSpecials = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).Servarr.IncludeSpecialsInSeriesProgress;
+        bool includeSpecials = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration)
+            .Servarr.IncludeSpecialsInSeriesProgress;
         IEnumerable<JObject> scoped = includeSpecials
             ? episodes
             : episodes.Where(e => e.Value<int?>("seasonNumber") != 0);
+
         if (seasonNumbers.Count == 0)
         {
             return scoped.ToList();
         }
 
-        return scoped.Where(e =>
-        {
-            int? seasonNumber = e.Value<int?>("seasonNumber");
-            return seasonNumber.HasValue && seasonNumbers.Contains(seasonNumber.Value);
-        }).ToList();
+        return scoped
+            .Where(e =>
+            {
+                int? seasonNumber = e.Value<int?>("seasonNumber");
+
+                return seasonNumber.HasValue && seasonNumbers.Contains(seasonNumber.Value);
+            })
+            .ToList();
     }
 
-    private static async Task<List<JObject>> FetchAllQueueRecordsAsync(HttpClient client, bool includeMovie, CancellationToken cancellationToken)
+    private static async Task<List<JObject>> FetchAllQueueRecordsAsync(
+        HttpClient client,
+        bool includeMovie,
+        CancellationToken cancellationToken
+    )
     {
         List<JObject> records = new();
         int page = 1;
@@ -695,6 +829,7 @@ public sealed class ServarrProgressService
 
         string raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
         JToken token = JToken.Parse(raw);
+
         return token as JArray;
     }
 
@@ -707,6 +842,7 @@ public sealed class ServarrProgressService
         }
 
         string raw = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
         return JObject.Parse(raw);
     }
 
@@ -715,6 +851,7 @@ public sealed class ServarrProgressService
         string normalized = baseUrl.Trim().TrimEnd('/');
         HttpClient client = new() { BaseAddress = new Uri(normalized + "/api/v3/"), Timeout = TimeSpan.FromSeconds(10) };
         client.DefaultRequestHeaders.Add("X-Api-Key", apiKey);
+
         return client;
     }
 
@@ -761,19 +898,22 @@ public sealed class ServarrProgressService
         int? ExternalServiceId,
         bool Is4k,
         string? ServiceUrl,
-        HashSet<int> SeasonNumbers);
+        HashSet<int> SeasonNumbers
+    );
 
     private sealed record RadarrSnapshot(
         string BaseUrl,
         Dictionary<int, JObject> MoviesByTmdbId,
         Dictionary<int, List<JObject>> QueueByMovieId,
-        Dictionary<int, List<JObject>> QueueByTmdbId);
+        Dictionary<int, List<JObject>> QueueByTmdbId
+    );
 
     private sealed record SonarrSnapshot(
         string BaseUrl,
         Dictionary<int, JObject> SeriesByTmdbId,
         Dictionary<int, List<JObject>> EpisodesBySeriesId,
-        Dictionary<int, List<JObject>> QueueBySeriesId);
+        Dictionary<int, List<JObject>> QueueBySeriesId
+    );
 
     private sealed class ServarrProgressInfo
     {

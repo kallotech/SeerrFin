@@ -18,7 +18,8 @@ public class LetterboxdBulkRequestService
     public LetterboxdBulkRequestService(
         JellyseerrRequestService requestService,
         JustWatchQualitiesService qualitiesService,
-        ILogger<LetterboxdBulkRequestService> logger)
+        ILogger<LetterboxdBulkRequestService> logger
+    )
     {
         _requestService = requestService;
         _qualitiesService = qualitiesService;
@@ -32,16 +33,24 @@ public class LetterboxdBulkRequestService
             return progress;
         }
 
-        return new LetterboxdRequestProgressDto { Done = 0, Total = 0, Percent = 0, IsActive = false };
+        return new LetterboxdRequestProgressDto
+        {
+            Done = 0,
+            Total = 0,
+            Percent = 0,
+            IsActive = false
+        };
     }
 
     public async Task<LetterboxdBulkRequestResultDto> SubmitBulkRequestAsync(
         Guid userId,
         string username,
         LetterboxdBulkRequestPayload payload,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         LetterboxdBulkRequestResultDto result = new();
+
         if (payload.TmdbIds == null || payload.TmdbIds.Count == 0)
         {
             return result;
@@ -54,11 +63,17 @@ public class LetterboxdBulkRequestService
         // Empty options means no Advanced Requests permission so use Seerr defaults.
         bool useSeerrDefaults = requestOptions.Count == 0;
         string qualityMode = string.Empty;
+
         if (!useSeerrDefaults)
         {
-            qualityMode = NormalizeQualityMode(string.IsNullOrWhiteSpace(payload.QualityMode) ? AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).Letterboxd.DefaultBulkQualityMode : payload.QualityMode);
-            if (qualityMode == "singleprofile" &&
-                (payload.ServerId == null || payload.ProfileId == null))
+            qualityMode = NormalizeQualityMode(
+                string.IsNullOrWhiteSpace(payload.QualityMode)
+                    ? AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration)
+                        .Letterboxd.DefaultBulkQualityMode
+                    : payload.QualityMode
+            );
+
+            if (qualityMode == "singleprofile" && (payload.ServerId == null || payload.ProfileId == null))
             {
                 throw new ArgumentException("ServerId and ProfileId are required for single profile mode.");
             }
@@ -76,19 +91,31 @@ public class LetterboxdBulkRequestService
 
                 try
                 {
-                    (int? serverId, int? profileId, string? rootFolder, bool is4k, string? profileName, string? qualityLabel, string? warning) =
-                        useSeerrDefaults ? (null, null, null, payload.Is4k, null, null, null) : await ResolveRequestOptionAsync(qualityMode, tmdbId, payload, requestOptions, cancellationToken).ConfigureAwait(false);
+                    (
+                        int? serverId,
+                        int? profileId,
+                        string? rootFolder,
+                        bool is4k,
+                        string? profileName,
+                        string? qualityLabel,
+                        string? warning
+                    ) = useSeerrDefaults
+                        ? (null, null, null, payload.Is4k, null, null, null)
+                        : await ResolveRequestOptionAsync(qualityMode, tmdbId, payload, requestOptions, cancellationToken)
+                            .ConfigureAwait(false);
 
                     if (!useSeerrDefaults && (serverId == null || profileId == null))
                     {
-                        result.Results.Add(new LetterboxdBulkRequestItemResult
-                        {
-                            TmdbId = tmdbId,
-                            Status = "failed",
-                            ProfileName = profileName,
-                            QualityLabel = qualityLabel,
-                            Message = warning ?? "Could not resolve a quality profile."
-                        });
+                        result.Results.Add(
+                            new LetterboxdBulkRequestItemResult
+                            {
+                                TmdbId = tmdbId,
+                                Status = "failed",
+                                ProfileName = profileName,
+                                QualityLabel = qualityLabel,
+                                Message = warning ?? "Could not resolve a quality profile."
+                            }
+                        );
                         result.Failed++;
                     }
                     else
@@ -110,38 +137,44 @@ public class LetterboxdBulkRequestService
                         // Seerr returns 409 when the title is already requested.
                         if (IsAlreadyRequested(statusCode, body))
                         {
-                            result.Results.Add(new LetterboxdBulkRequestItemResult
-                            {
-                                TmdbId = tmdbId,
-                                Status = "skipped",
-                                ProfileName = profileName,
-                                QualityLabel = qualityLabel,
-                                Message = warning ?? "Already requested."
-                            });
+                            result.Results.Add(
+                                new LetterboxdBulkRequestItemResult
+                                {
+                                    TmdbId = tmdbId,
+                                    Status = "skipped",
+                                    ProfileName = profileName,
+                                    QualityLabel = qualityLabel,
+                                    Message = warning ?? "Already requested."
+                                }
+                            );
                             result.Skipped++;
                         }
                         else if (statusCode >= 200 && statusCode < 300)
                         {
-                            result.Results.Add(new LetterboxdBulkRequestItemResult
-                            {
-                                TmdbId = tmdbId,
-                                Status = "requested",
-                                ProfileName = profileName,
-                                QualityLabel = qualityLabel,
-                                Message = warning
-                            });
+                            result.Results.Add(
+                                new LetterboxdBulkRequestItemResult
+                                {
+                                    TmdbId = tmdbId,
+                                    Status = "requested",
+                                    ProfileName = profileName,
+                                    QualityLabel = qualityLabel,
+                                    Message = warning
+                                }
+                            );
                             result.Requested++;
                         }
                         else
                         {
-                            result.Results.Add(new LetterboxdBulkRequestItemResult
-                            {
-                                TmdbId = tmdbId,
-                                Status = "failed",
-                                ProfileName = profileName,
-                                QualityLabel = qualityLabel,
-                                Message = ExtractErrorMessage(body) ?? $"Request failed with status {statusCode}."
-                            });
+                            result.Results.Add(
+                                new LetterboxdBulkRequestItemResult
+                                {
+                                    TmdbId = tmdbId,
+                                    Status = "failed",
+                                    ProfileName = profileName,
+                                    QualityLabel = qualityLabel,
+                                    Message = ExtractErrorMessage(body) ?? $"Request failed with status {statusCode}."
+                                }
+                            );
                             result.Failed++;
                         }
                     }
@@ -149,12 +182,7 @@ public class LetterboxdBulkRequestService
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "SeerrFin • bulk request failed for TMDB movie {TmdbId}", tmdbId);
-                    result.Results.Add(new LetterboxdBulkRequestItemResult
-                    {
-                        TmdbId = tmdbId,
-                        Status = "failed",
-                        Message = ex.Message
-                    });
+                    result.Results.Add(new LetterboxdBulkRequestItemResult { TmdbId = tmdbId, Status = "failed", Message = ex.Message });
                     result.Failed++;
                 }
 
@@ -170,7 +198,13 @@ public class LetterboxdBulkRequestService
         return result;
     }
 
-    private void SetRequestProgress(Guid userId, int done, int total, int? currentTmdbId, IReadOnlyList<LetterboxdBulkRequestItemResult> completed)
+    private void SetRequestProgress(
+        Guid userId,
+        int done,
+        int total,
+        int? currentTmdbId,
+        IReadOnlyList<LetterboxdBulkRequestItemResult> completed
+    )
     {
         _requestProgress[userId] = new LetterboxdRequestProgressDto
         {
@@ -188,23 +222,32 @@ public class LetterboxdBulkRequestService
         _requestProgress.TryRemove(userId, out _);
     }
 
-    private async Task<(int? ServerId, int? ProfileId, string? RootFolder, bool Is4k, string? ProfileName, string? QualityLabel, string? Warning)> ResolveRequestOptionAsync(
+    private async Task<(
+        int? ServerId,
+        int? ProfileId,
+        string? RootFolder,
+        bool Is4k,
+        string? ProfileName,
+        string? QualityLabel,
+        string? Warning
+    )> ResolveRequestOptionAsync(
         string qualityMode,
         int tmdbId,
         LetterboxdBulkRequestPayload payload,
         JArray requestOptions,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         // User picked one quality profile for every selected movie.
         if (qualityMode == "singleprofile")
         {
             string? profileName = GetProfileName(requestOptions, payload.ServerId, payload.ProfileId);
+
             return (payload.ServerId, payload.ProfileId, payload.RootFolder, payload.Is4k, profileName, null, null);
         }
 
         // Per movie: ask jw which tier fits, then match to the quality profile.
-        JustWatchQualitiesDto? qualities = await _qualitiesService
-            .GetQualitiesAsync("movie", tmdbId, cancellationToken)
+        JustWatchQualitiesDto? qualities = await _qualitiesService.GetQualitiesAsync("movie", tmdbId, cancellationToken)
             .ConfigureAwait(false);
 
         string? targetLabel = qualityMode switch
@@ -215,6 +258,7 @@ public class LetterboxdBulkRequestService
         };
 
         AdvancedJustWatchSettings jwSettings = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).JustWatch;
+
         if (string.IsNullOrWhiteSpace(targetLabel))
         {
             if (!jwSettings.FallbackToDefaultProfile)
@@ -223,6 +267,7 @@ public class LetterboxdBulkRequestService
             }
 
             JObject? fallback = GetDefaultProfileOption(requestOptions, prefer4k: false);
+
             return (
                 fallback?.Value<int?>("serverId"),
                 fallback?.Value<int?>("profileId"),
@@ -230,7 +275,8 @@ public class LetterboxdBulkRequestService
                 fallback?.Value<bool?>("is4k") ?? false,
                 fallback?.Value<string>("profileName"),
                 null,
-                "Quality recommendation unavailable; used default profile.");
+                "Quality recommendation unavailable; used default profile."
+            );
         }
 
         bool prefer4k = string.Equals(targetLabel, "Ultra-HD", StringComparison.OrdinalIgnoreCase) && jwSettings.Prefer4kServerForUltraHd;
@@ -244,11 +290,13 @@ public class LetterboxdBulkRequestService
                 matched.Value<bool?>("is4k") ?? false,
                 matched.Value<string>("profileName"),
                 targetLabel,
-                null);
+                null
+            );
         }
 
         // No profile name matched the jw tier so fall back to server default (or maybe Any? idk whats more fitting.)
         JObject? defaultOption = GetDefaultProfileOption(requestOptions, prefer4k);
+
         return (
             defaultOption?.Value<int?>("serverId"),
             defaultOption?.Value<int?>("profileId"),
@@ -256,26 +304,29 @@ public class LetterboxdBulkRequestService
             defaultOption?.Value<bool?>("is4k") ?? false,
             defaultOption?.Value<string>("profileName"),
             targetLabel,
-            $"Could not match {targetLabel}; used default profile.");
+            $"Could not match {targetLabel}; used default profile."
+        );
     }
 
     private static string? GetProfileName(JArray options, int? serverId, int? profileId)
     {
-        return options.OfType<JObject>().FirstOrDefault(option => option.Value<int?>("serverId") == serverId && option.Value<int?>("profileId") == profileId)
+        return options.OfType<JObject>()
+            .FirstOrDefault(option => option.Value<int?>("serverId") == serverId && option.Value<int?>("profileId") == profileId)
             ?.Value<string>("profileName");
     }
 
     private static string NormalizeQualityMode(string? mode)
     {
         string normalized = (mode ?? "singleProfile").Trim();
-        return normalized.Replace("-", string.Empty, StringComparison.Ordinal)
-            .Replace("_", string.Empty, StringComparison.Ordinal)
+
+        return normalized.Replace("-", string.Empty, StringComparison.Ordinal).Replace("_", string.Empty, StringComparison.Ordinal)
             .ToLowerInvariant();
     }
 
     private static JObject? FindProfileOption(JArray options, string targetLabel, bool prefer4k)
     {
         IEnumerable<JObject> candidates = options.OfType<JObject>();
+
         if (prefer4k)
         {
             // Ultra-HD targets should land on a 4K Radarr server when one exists.
@@ -302,8 +353,7 @@ public class LetterboxdBulkRequestService
         {
             foreach (string alias in aliases)
             {
-                JObject? exact = options.FirstOrDefault(option =>
-                    ProfileNamesMatch(option.Value<string>("profileName"), alias));
+                JObject? exact = options.FirstOrDefault(option => ProfileNamesMatch(option.Value<string>("profileName"), alias));
                 if (exact != null)
                 {
                     return exact;
@@ -323,33 +373,29 @@ public class LetterboxdBulkRequestService
 
         string normalizedProfile = NormalizeProfileName(profileName);
         string normalizedTarget = NormalizeProfileName(target);
+
         return normalizedProfile.Contains(normalizedTarget, StringComparison.Ordinal)
-               || normalizedTarget.Contains(normalizedProfile, StringComparison.Ordinal);
+            || normalizedTarget.Contains(normalizedProfile, StringComparison.Ordinal);
     }
 
-    private static string NormalizeProfileName(string value) =>
-        value.Replace("-", " ", StringComparison.Ordinal)
-            .Replace("/", " ", StringComparison.Ordinal)
-            .Trim()
-            .ToLowerInvariant();
+    private static string NormalizeProfileName(string value) => value.Replace("-", " ", StringComparison.Ordinal).Replace("/", " ", StringComparison.Ordinal).Trim().ToLowerInvariant();
 
     private static JObject? GetDefaultProfileOption(JArray options, bool prefer4k)
     {
         IEnumerable<JObject> candidates = options.OfType<JObject>();
+
         if (prefer4k)
         {
-            JObject? fourKDefault = candidates.FirstOrDefault(o =>
-                o.Value<bool?>("is4k") == true && o.Value<bool?>("isDefaultProfile") == true);
+            JObject? fourKDefault = candidates.FirstOrDefault(o => o.Value<bool?>("is4k") == true && o.Value<bool?>("isDefaultProfile") == true);
             if (fourKDefault != null)
             {
                 return fourKDefault;
             }
         }
 
-        return candidates.FirstOrDefault(o =>
-                   o.Value<bool?>("is4k") != true && o.Value<bool?>("isDefaultProfile") == true)
-               ?? candidates.FirstOrDefault(o => o.Value<bool?>("is4k") != true)
-               ?? candidates.FirstOrDefault();
+        return candidates.FirstOrDefault(o => o.Value<bool?>("is4k") != true && o.Value<bool?>("isDefaultProfile") == true)
+            ?? candidates.FirstOrDefault(o => o.Value<bool?>("is4k") != true)
+            ?? candidates.FirstOrDefault();
     }
 
     private static bool IsAlreadyRequested(int statusCode, string body)
@@ -365,7 +411,7 @@ public class LetterboxdBulkRequestService
         }
 
         return body.Contains("already been requested", StringComparison.OrdinalIgnoreCase)
-               || body.Contains("already requested", StringComparison.OrdinalIgnoreCase);
+            || body.Contains("already requested", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string? ExtractErrorMessage(string body)

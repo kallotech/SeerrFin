@@ -88,9 +88,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 this.setupNativeTabWatchers();
             }
 
-            this.ensureNativeTabs().then(function () {
-                window.seerrFinPlugin.scheduleRender();
-            });
+            this.ensureNativeTabs().then(function () { window.seerrFinPlugin.scheduleRender(); });
         },
 
         isContainerVisible: function (container) {
@@ -100,11 +98,13 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             // jf hides inactive pages with .hide rather than removing from the actual page
             const page = container.closest('.page');
+
             if (page && page.classList.contains('hide')) {
                 return false;
             }
 
             const tabPanel = container.closest('.tabContent, .pageTabContent');
+
             if (tabPanel && tabPanel.classList.contains('hide')) {
                 return false;
             }
@@ -119,32 +119,30 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         findActiveContainer: function (selector) {
             // jf might keep the duplicate tab dom, so prefer last match
             const all = document.querySelectorAll(selector);
+
             for (let i = all.length - 1; i >= 0; i--) {
-                if (this.isContainerVisible(all[i])) {
-                    return all[i];
-                }
+                if (this.isContainerVisible(all[i])) { return all[i]; }
             }
+
             return null;
         },
 
         asArray: function (data) {
-            if (!data) {
-                return [];
-            }
-            if (Array.isArray(data)) {
-                return data;
-            }
+            if (!data) { return []; }
+            if (Array.isArray(data)) { return data; }
+
             if (data.results && Array.isArray(data.results)) {
                 return data.results;
             }
+
             return [];
         },
 
         scheduleRender: function () {
             const self = this;
-            if (self._renderPending) {
-                return;
-            }
+
+            if (self._renderPending) { return; }
+
             self._renderPending = true;
             requestAnimationFrame(function () {
                 self._renderPending = false;
@@ -172,13 +170,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const defaults = this.getDefaultTabConfig();
             const enabledById = {};
             const titleById = {};
+
             (Array.isArray(tabs) ? tabs : []).forEach(function (tab) {
                 const id = String(tab && tab.id || '').toLowerCase();
+
                 if (!defaults.some(function (item) { return item.id === id; })) {
                     return;
                 }
+
                 enabledById[id] = tab.enabled !== false;
                 const title = String(tab.title || '').trim();
+
                 if (title) {
                     titleById[id] = title;
                 }
@@ -187,12 +189,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             return defaults.map(function (tab) {
                 return {
                     id: tab.id,
-                    enabled: Object.prototype.hasOwnProperty.call(enabledById, tab.id)
-                        ? enabledById[tab.id]
-                        : tab.enabled,
-                    title: Object.prototype.hasOwnProperty.call(titleById, tab.id)
-                        ? titleById[tab.id]
-                        : self.resolveTabTitle(tab.id)
+                    enabled: Object.prototype.hasOwnProperty.call(enabledById, tab.id) ? enabledById[tab.id] : tab.enabled,
+                    title: Object.prototype.hasOwnProperty.call(titleById, tab.id) ? titleById[tab.id] : self.resolveTabTitle(tab.id)
                 };
             });
         },
@@ -200,16 +198,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         findActiveHomePage: function () {
             // Jellyfin 12 legacy view caches pages by route, so multiple indexPage IDs can stay mounted. The newest page without .hide uses the header
             const pages = document.querySelectorAll('.page:not(.hide)');
+
             for (let i = pages.length - 1; i >= 0; i--) {
-                if (!pages[i].closest('.hide')) {
-                    return pages[i].id === 'indexPage' ? pages[i] : null;
-                }
+                if (!pages[i].closest('.hide')) { return pages[i].id === 'indexPage' ? pages[i] : null; }
             }
+
             return null;
         },
 
         isHomeRoute: function () {
             const hash = window.location.hash || '';
+
             return hash === '' ||
                 hash === '#/home' ||
                 hash === '#/home.html' ||
@@ -222,9 +221,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         cleanupSeerrFinHeaderButtons: function () {
-            document.querySelectorAll('.headerTabs [data-seerrfin-tab]').forEach(function (btn) {
-                btn.remove();
-            });
+            document.querySelectorAll('.headerTabs [data-seerrfin-tab]').forEach(function (btn) { btn.remove(); });
         },
 
         seerrFinBarKey: function (id) {
@@ -238,9 +235,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         isLegacySeerrFinCustomTabHtml: function (html) {
             const value = String(html || '').toLowerCase();
             const tabDefs = this.TAB_DEFS;
-            return Object.keys(tabDefs).some(function (id) {
-                return value.indexOf(tabDefs[id].sectionClass) !== -1;
-            });
+            return Object.keys(tabDefs).some(function (id) { return value.indexOf(tabDefs[id].sectionClass) !== -1; });
         },
 
         normalizeBarOrder: function (barOrder, customTabs) {
@@ -253,6 +248,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 if (!key || seen[key]) {
                     return;
                 }
+
                 seen[key] = true;
                 result.push(key);
             }
@@ -262,9 +258,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             (Array.isArray(barOrder) ? barOrder : []).forEach(function (raw) {
                 let key = String(raw || '').trim();
-                if (!key) {
-                    return;
-                }
+
+                if (!key) { return; }
 
                 if (self.TAB_DEFS[key.toLowerCase()]) {
                     key = self.seerrFinBarKey(key);
@@ -276,24 +271,24 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
                 if (key.indexOf('sf:') === 0) {
                     const id = key.slice(3);
+
                     if (self.TAB_DEFS[id]) {
                         add(self.seerrFinBarKey(id));
                     }
+
                     return;
                 }
 
                 if (key.indexOf('ct:') === 0) {
                     const index = parseInt(key.slice(3), 10);
+
                     if (!isNaN(index) && index >= 0 && index < customList.length && !customList[index].legacySeerrFin) {
                         add(self.customTabsBarKey(index));
                     }
                 }
             });
 
-            Object.keys(self.TAB_DEFS).forEach(function (id) {
-                add(self.seerrFinBarKey(id));
-            });
-
+            Object.keys(self.TAB_DEFS).forEach(function (id) { add(self.seerrFinBarKey(id)); });
             customList.forEach(function (tab, index) {
                 if (!tab.legacySeerrFin) {
                     add(self.customTabsBarKey(index));
@@ -308,18 +303,11 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             function mapTabs(tabs) {
                 return (Array.isArray(tabs) ? tabs : []).map(function (tab, index) {
-                    return {
-                        index: index,
-                        legacySeerrFin: self.isLegacySeerrFinCustomTabHtml(tab.ContentHtml || tab.contentHtml || '')
-                    };
+                    return { index: index, legacySeerrFin: self.isLegacySeerrFinCustomTabHtml(tab.ContentHtml || tab.contentHtml || '') };
                 });
             }
 
-            return ApiClient.ajax({
-                url: ApiClient.getUrl('CustomTabs/Config'),
-                type: 'GET',
-                dataType: 'json'
-            }).then(mapTabs).catch(function () {
+            return ApiClient.ajax({ url: ApiClient.getUrl('CustomTabs/Config'), type: 'GET', dataType: 'json' }).then(mapTabs).catch(function () {
                 return ApiClient.getPluginConfiguration(self.CUSTOM_TABS_PLUGIN_ID).then(function (config) {
                     return mapTabs(config.Tabs || config.tabs);
                 }).catch(function () {
@@ -330,39 +318,24 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         loadTabConfig: function () {
             const self = this;
-            if (self._tabConfig) {
-                return Promise.resolve(self._tabConfig);
-            }
-            if (self._tabConfigPromise) {
-                return self._tabConfigPromise;
-            }
 
-            const displaySettingsPromise = self._tabSettingsSnapshot
-                ? Promise.resolve(self._tabSettingsSnapshot)
-                : self.loadDisplaySettings().then(function () {
-                    return self._tabSettingsSnapshot || {};
-                });
+            if (self._tabConfig) { return Promise.resolve(self._tabConfig); }
+            if (self._tabConfigPromise) { return self._tabConfigPromise; }
 
-            self._tabConfigPromise = Promise.all([
-                displaySettingsPromise,
-                self.loadCustomTabsConfig()
-            ]).then(function (results) {
+            const displaySettingsPromise = self._tabSettingsSnapshot ?
+                Promise.resolve(self._tabSettingsSnapshot) :
+                self.loadDisplaySettings().then(function () { return self._tabSettingsSnapshot || {}; });
+
+            self._tabConfigPromise = Promise.all([displaySettingsPromise, self.loadCustomTabsConfig()]).then(function (results) {
                 const settings = results[0] || {};
                 const customTabs = results[1] || [];
                 const tabs = self.normalizeTabConfig(settings.tabs);
-                return {
-                    tabs: tabs,
-                    tabBarOrder: self.normalizeBarOrder(settings.tabBarOrder, customTabs),
-                    customTabs: customTabs
-                };
+
+                return { tabs: tabs, tabBarOrder: self.normalizeBarOrder(settings.tabBarOrder, customTabs), customTabs: customTabs };
             }).catch(function (err) {
                 log.warn('tab config fetch failed, using defaults', err);
                 const tabs = self.getDefaultTabConfig();
-                return {
-                    tabs: tabs,
-                    tabBarOrder: self.normalizeBarOrder([], []),
-                    customTabs: []
-                };
+                return { tabs: tabs, tabBarOrder: self.normalizeBarOrder([], []), customTabs: [] };
             }).then(function (config) {
                 self._tabConfig = config;
                 self._tabConfigPromise = null;
@@ -378,6 +351,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             const page = this.findActiveHomePage();
+
             page.querySelectorAll('.tabContent[data-index]').forEach(function (panel) {
                 const panelIndex = parseInt(panel.getAttribute('data-index'), 10);
                 panel.classList.toggle('is-active', panelIndex === selectedIndex);
@@ -394,39 +368,37 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const self = this;
 
             tabs.addEventListener('click', function (event) {
-                if (!self.isHomeTabContext()) {
-                    return;
-                }
+                if (!self.isHomeTabContext()) { return; }
+
                 const button = event.target.closest && event.target.closest('.emby-tab-button');
+
                 if (!button || button.classList.contains('hide')) {
                     return;
                 }
+
                 const id = button.getAttribute('data-seerrfin-tab');
                 const index = parseInt(button.getAttribute('data-index'), 10);
-                if (isNaN(index)) {
-                    return;
-                }
+
+                if (isNaN(index)) { return; }
+
                 // Legacy tab clicks do not update the route. Keep selections bookmarkable, including from plain #/home.
                 window.location.hash = id ? '#/home?seerrfinTab=' + id : (index === 0 ? '#/home' : '#/home?tab=' + index);
                 self.syncModernNavigation();
             }, true);
 
             tabs.addEventListener('beforetabchange', function (event) {
-                if (!self.isHomeTabContext()) {
-                    return;
-                }
+                if (!self.isHomeTabContext()) { return; }
 
                 const index = parseInt(event.detail && event.detail.selectedTabIndex, 10);
-                if (isNaN(index)) {
-                    return;
-                }
+
+                if (isNaN(index)) { return; }
 
                 // jellyfin activates panels by NodeList index.
                 // sync by data-index so SeerrFin panels stay in the right order.
                 self.syncTabPanelsActiveState(index);
                 requestAnimationFrame(function () { self.syncModernNavigation(); });
-
                 const selectedButton = tabs.querySelector('.emby-tab-button[data-index="' + index + '"]');
+
                 if (selectedButton && selectedButton.getAttribute('data-seerrfin-tab')) {
                     log.info('SeerrFin tab before change to index ' + index);
                     setTimeout(function () {
@@ -439,24 +411,19 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             // Jellyfin HomeView only has controllers for Home/Favorites (block plugin tabs by identity)
             tabs.addEventListener('tabchange', function (event) {
-                if (!self.isHomeTabContext()) {
-                    return;
-                }
+                if (!self.isHomeTabContext()) { return; }
 
                 const index = parseInt(event.detail && event.detail.selectedTabIndex, 10);
-                if (isNaN(index)) {
-                    return;
-                }
+
+                if (isNaN(index)) { return; }
 
                 const selectedButton = tabs.querySelector('.emby-tab-button[data-index="' + index + '"]');
-                if (!selectedButton) {
-                    return;
-                }
+
+                if (!selectedButton) { return; }
 
                 const isPluginTab = index > 1;
-                if (!isPluginTab) {
-                    return;
-                }
+
+                if (!isPluginTab) { return; }
 
                 log.info('blocking Jellyfin tabchange handler for plugin tab index ' + index);
                 event.stopImmediatePropagation();
@@ -468,12 +435,15 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             log.info('SeerrFin tab shown, scheduling render');
             setTimeout(function () {
                 self.scheduleRender();
+
                 if (typeof window.__seerrFinRequestsEnsureMounted === 'function') {
                     window.__seerrFinRequestsEnsureMounted({ tabShown: true });
                 }
+
                 if (typeof window.__seerrFinWatchlistEnsureMounted === 'function') {
                     window.__seerrFinWatchlistEnsureMounted();
                 }
+
                 if (typeof window.__seerrFinLetterboxdEnsureMounted === 'function') {
                     window.__seerrFinLetterboxdEnsureMounted();
                 }
@@ -482,9 +452,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         removeObsoleteSeerrFinPanels: function (page, slots) {
             const tabDefs = this.TAB_DEFS;
-            const sectionSelector = Object.keys(tabDefs).map(function (id) {
-                return '.' + tabDefs[id].sectionClass;
-            }).join(', ');
+            const sectionSelector = Object.keys(tabDefs).map(function (id) { return '.' + tabDefs[id].sectionClass; }).join(', ');
             const activeIds = new Set(slots.filter(function (slot) {
                 return slot.type === 'seerrfin';
             }).map(function (slot) {
@@ -493,15 +461,20 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             page.querySelectorAll('.tabContent').forEach(function (panel) {
                 const reservedIndex = panel.getAttribute('data-seerrfin-reserved-index');
+
                 if (reservedIndex !== null) {
                     if (!slots.some(function (slot) { return slot.key === 'reserved:' + reservedIndex; })) panel.remove();
+
                     return;
                 }
+
                 const id = panel.getAttribute('data-seerrfin-tab');
+
                 if (id) {
                     if (!activeIds.has(id)) {
                         panel.remove();
                     }
+
                     return;
                 }
 
@@ -515,22 +488,22 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const titleEl = document.createElement('div');
             titleEl.className = 'emby-button-foreground';
             titleEl.textContent = this.resolveTabTitle(id, title);
-
             const button = document.createElement('button');
             button.type = 'button';
             button.setAttribute('is', 'empty-button');
             button.className = 'emby-tab-button emby-button';
             button.setAttribute('data-seerrfin-tab', id);
             button.appendChild(titleEl);
+
             return button;
         },
 
         setTabButtonTitle: function (button, id, title) {
-            if (!button) {
-                return;
-            }
+            if (!button) { return; }
+
             const titleEl = button.querySelector('.emby-button-foreground');
             const nextTitle = this.resolveTabTitle(id, title);
+
             if (titleEl && titleEl.textContent !== nextTitle) {
                 titleEl.textContent = nextTitle;
             }
@@ -538,10 +511,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         applyTabTitles: function (tabsSlider, slots) {
             const self = this;
+
             (slots || []).forEach(function (slot) {
-                if (slot.type !== 'seerrfin') {
-                    return;
-                }
+                if (slot.type !== 'seerrfin') { return; }
+
                 const button = tabsSlider.querySelector('[data-seerrfin-tab="' + slot.id + '"]');
                 self.setTabButtonTitle(button, slot.id, slot.title);
             });
@@ -551,24 +524,29 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const panel = document.createElement('div');
             panel.className = 'tabContent pageTabContent';
             panel.setAttribute('data-seerrfin-tab', id);
-
             const sections = document.createElement('div');
             sections.className = 'sections ' + this.TAB_DEFS[id].sectionClass;
             panel.appendChild(sections);
+
             return panel;
         },
 
         findJellyfinTabButton: function (tabsSlider, kind) {
             const buttons = Array.from(tabsSlider.querySelectorAll('.emby-tab-button'));
+
             for (let i = 0; i < buttons.length; i++) {
                 const btn = buttons[i];
+
                 if (btn.hasAttribute('data-seerrfin-tab') || (btn.id || '').indexOf('customTabButton_') === 0) {
                     continue;
                 }
+
                 const index = parseInt(btn.getAttribute('data-index'), 10);
+
                 if (kind === 'home' && index === 0) {
                     return btn;
                 }
+
                 if (kind === 'favorites' && index === 1) {
                     return btn;
                 }
@@ -578,9 +556,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const native = buttons.filter(function (btn) {
                 return !btn.hasAttribute('data-seerrfin-tab') && (btn.id || '').indexOf('customTabButton_') !== 0;
             });
-            if (kind === 'home') {
-                return native[0] || null;
-            }
+
+            if (kind === 'home') { return native[0] || null; }
+
             return native[1] || null;
         },
 
@@ -588,47 +566,46 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const self = this;
             const tabsById = {};
             const route = new URLSearchParams(window.location.hash.split('?')[1] || '');
-            (config.tabs || []).forEach(function (tab) {
-                tabsById[tab.id] = tab;
-            });
+            (config.tabs || []).forEach(function (tab) { tabsById[tab.id] = tab; });
             const discoverTab = tabsById.discover;
             const openRequestsFromDiscover = !!discoverTab && discoverTab.enabled !== false &&
                 route.get('seerrfinTab') === 'requests' && route.get('seerrfinFrom') === 'discover';
 
             return (config.tabBarOrder || []).map(function (key) {
-                if (key === 'jf:home') {
-                    return { key: key, type: 'jellyfin', id: 'home' };
-                }
-                if (key === 'jf:favorites') {
-                    return { key: key, type: 'jellyfin', id: 'favorites' };
-                }
+                if (key === 'jf:home') { return { key: key, type: 'jellyfin', id: 'home' }; }
+                if (key === 'jf:favorites') { return { key: key, type: 'jellyfin', id: 'favorites' }; }
+
                 if (key.indexOf('sf:') === 0) {
                     const id = key.slice(3);
                     const tab = tabsById[id];
                     // Keep Requests out of the navigation when disabled, but mount its panel
                     // for the Discover flow that explicitly navigates to it.
                     const allowDisabledRequests = id === 'requests' && openRequestsFromDiscover;
+
                     if (!tab || (tab.enabled === false && !allowDisabledRequests) || !self.TAB_DEFS[id]) {
                         return null;
                     }
+
                     return { key: key, type: 'seerrfin', id: id, title: tab.title };
                 }
+
                 if (key.indexOf('ct:') === 0) {
                     const index = parseInt(key.slice(3), 10);
                     const custom = (config.customTabs || [])[index];
+
                     if (!custom || custom.legacySeerrFin) {
                         return null;
                     }
+
                     return { key: key, type: 'customtabs', index: index };
                 }
+
                 return null;
             }).filter(Boolean);
         },
 
         barPlacementSignature: function (slots) {
-            return slots.map(function (slot) {
-                return slot.key;
-            }).join('|');
+            return slots.map(function (slot) { return slot.key; }).join('|');
         },
 
         includeExternalTabSlots: function (page, tabsSlider, slots) {
@@ -637,19 +614,22 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 return slot.type !== 'customtabs' || (tabsSlider.querySelector('#customTabButton_' + slot.index) && page.querySelector('[id="customTab_' + slot.index + '"]'));
             });
             const external = [];
+
             tabsSlider.querySelectorAll('.emby-tab-button').forEach(function (button) {
                 const index = parseInt(button.getAttribute('data-index'), 10);
+
                 if (index < 2 || isNaN(index) || button.hasAttribute('data-seerrfin-tab') || button.hasAttribute('data-seerrfin-reserved-index') || /^customTabButton_/.test(button.id)) {
                     return;
                 }
 
                 // Enhanced caches tab indices for its header links, so keep these slots in place, including when its cached index collides with a newly built bar
                 const enhancedId = /^je-native-tab-btn-(.+)$/.exec(button.id);
-                const panel = enhancedId
-                    ? page.querySelector('[id="je-native-tab-panel-' + enhancedId[1] + '"]')
-                    : Array.from(page.querySelectorAll('.tabContent')).find(function (candidate) {
+                const panel = enhancedId ?
+                    page.querySelector('[id="je-native-tab-panel-' + enhancedId[1] + '"]') :
+                    Array.from(page.querySelectorAll('.tabContent')).find(function (candidate) {
                         return candidate.getAttribute('data-index') === String(index) && !candidate.hasAttribute('data-seerrfin-tab') && !/^(homeTab|favoritesTab|customTab_)/.test(candidate.id);
                     });
+
                 if (panel) {
                     external.push({ key: 'external:' + (button.id || index), type: 'external', index: index, button: button, panel: panel });
                 }
@@ -660,8 +640,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 while (result.length < slot.index) {
                     result.push({ key: 'reserved:' + result.length, type: 'reserved', index: result.length });
                 }
+
                 result.splice(slot.index, 0, slot);
             });
+
             return result;
         },
 
@@ -670,21 +652,20 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 if (btn.hasAttribute('data-seerrfin-reserved-index')) {
                     return 'reserved:' + btn.getAttribute('data-seerrfin-reserved-index');
                 }
+
                 const sf = btn.getAttribute('data-seerrfin-tab');
-                if (sf) {
-                    return 'sf:' + sf;
-                }
+
+                if (sf) { return 'sf:' + sf; }
+
                 const ct = /^customTabButton_(\d+)$/.exec(btn.id || '');
-                if (ct) {
-                    return 'ct:' + ct[1];
-                }
+
+                if (ct) { return 'ct:' + ct[1]; }
+
                 const index = btn.getAttribute('data-index');
-                if (index === '0') {
-                    return 'jf:home';
-                }
-                if (index === '1') {
-                    return 'jf:favorites';
-                }
+
+                if (index === '0') { return 'jf:home'; }
+                if (index === '1') { return 'jf:favorites'; }
+
                 return 'external:' + (btn.id || index);
             }).join('|');
         },
@@ -693,21 +674,20 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const self = this;
             const page = self.findActiveHomePage();
             const missing = (customTabs || []).some(function (tab) {
-                if (tab.legacySeerrFin) {
-                    return false;
-                }
+                if (tab.legacySeerrFin) { return false; }
+
                 const button = document.querySelector('.headerTabs #customTabButton_' + tab.index);
                 const panel = page && page.querySelector('[id="customTab_' + tab.index + '"]');
+
                 return !button || !panel;
             });
+
             if (!missing || attemptsLeft <= 0) {
                 return Promise.resolve();
             }
 
             return new Promise(function (resolve) {
-                setTimeout(function () {
-                    self.waitForCustomTabs(customTabs, attemptsLeft - 1).then(resolve);
-                }, 150);
+                setTimeout(function () { self.waitForCustomTabs(customTabs, attemptsLeft - 1).then(resolve); }, 150);
             });
         },
 
@@ -723,11 +703,13 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     if (node.parentNode !== parent) {
                         parent.appendChild(node);
                     }
+
                     continue;
                 }
 
                 const alreadyAfter = node.parentNode === parent &&
                     (previous.compareDocumentPosition(node) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+
                 if (!alreadyAfter) {
                     parent.insertBefore(node, previous.nextSibling);
                 }
@@ -736,6 +718,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         removeUnplannedTabButtons: function (tabsSlider, plannedButtons) {
             const keep = new Set(plannedButtons);
+
             tabsSlider.querySelectorAll('.emby-tab-button').forEach(function (button) {
                 if (!keep.has(button) && (button.hasAttribute('data-seerrfin-tab') || button.hasAttribute('data-seerrfin-reserved-index') || /^customTabButton_/.test(button.id))) {
                     button.remove();
@@ -745,12 +728,14 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         applyBarOrder: function (page, tabsSlider, slots) {
             const self = this;
+
             if (!self.isHomeTabContext() || !page || !tabsSlider) {
                 return false;
             }
 
             const homeTab = page.querySelector('[id="homeTab"]');
             const favoritesTab = page.querySelector('[id="favoritesTab"]');
+
             if (!homeTab || !favoritesTab) {
                 log.warn('home tab panels missing; skipping bar apply');
                 return false;
@@ -758,6 +743,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             // Resolve references first so we can abort before moving nodes.
             const planned = [];
+
             for (let i = 0; i < slots.length; i++) {
                 const slot = slots[i];
                 let button = null;
@@ -766,6 +752,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 if (slot.type === 'jellyfin') {
                     button = self.findJellyfinTabButton(tabsSlider, slot.id);
                     panel = slot.id === 'home' ? homeTab : favoritesTab;
+
                     if (!button || !panel) {
                         continue;
                     }
@@ -773,6 +760,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     button = tabsSlider.querySelector('#customTabButton_' + slot.index);
                     // Never fabricate custom tab panels. empty placeholders remove real custom tab html on rebuild.
                     panel = page.querySelector('[id="customTab_' + slot.index + '"]');
+
                     if (!button || !panel) {
                         continue;
                     }
@@ -782,12 +770,14 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 } else if (slot.type === 'reserved') {
                     button = tabsSlider.querySelector('[data-seerrfin-reserved-index="' + slot.index + '"]');
                     panel = page.querySelector('.tabContent[data-seerrfin-reserved-index="' + slot.index + '"]');
+
                     if (!button) {
                         button = document.createElement('button');
                         button.type = 'button';
                         button.className = 'emby-tab-button hide';
                         button.setAttribute('data-seerrfin-reserved-index', String(slot.index));
                     }
+
                     if (!panel) {
                         panel = document.createElement('div');
                         panel.className = 'tabContent pageTabContent hide';
@@ -806,7 +796,6 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             self.removeObsoleteSeerrFinPanels(page, slots);
-
             const orderedButtons = [];
             const orderedPanels = [];
 
@@ -820,6 +809,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     } else {
                         self.setTabButtonTitle(button, item.slot.id, item.slot.title);
                     }
+
                     if (!(panel && panel.getAttribute('data-seerrfin-tab') === item.slot.id)) {
                         panel = self.createTabPanel(item.slot.id);
                     }
@@ -831,22 +821,23 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 orderedPanels.push(panel);
             });
 
-            if (!self.isHomeTabContext()) {
-                return false;
-            }
+            if (!self.isHomeTabContext()) { return false; }
 
             self.placeInOrder(tabsSlider, orderedButtons);
             self.removeUnplannedTabButtons(tabsSlider, orderedButtons);
 
             // Put Jellyfin, Custom Tabs, and SeerrFin panels in bar order.
             self.placeInOrder(page, orderedPanels);
+
             return true;
         },
 
         getModernNavId: function (link) {
             if (!link || !link.closest('header.MuiAppBar-root, .MuiDrawer-paper, #user-view-overflow-menu, .customMenuOptions')) return null;
+
             const match = /^#\/home(?:\.html)?\?(.+)$/.exec(link.getAttribute('href') || '');
             const id = match && new URLSearchParams(match[1]).get('seerrfinTab');
+
             return id && this.TAB_DEFS[id] ? id : null;
         },
 
@@ -858,55 +849,69 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         bindModernNavigation: function () {
             const self = this;
+
             // Handle ordinary SeerrFin navigation and keep native drawer closing behaviour.
             document.addEventListener('click', function (event) {
                 if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+
                 const link = event.target.closest && event.target.closest('a[href]');
                 const tabId = self.getModernNavId(link);
                 const href = link && (link.getAttribute('href') || '');
                 const drawer = link && link.closest('.MuiDrawer-paper');
                 const hiddenDrawer = drawer && getComputedStyle(drawer).visibility === 'hidden';
+
                 if (!tabId && !(hiddenDrawer && href.indexOf('#/') === 0 && link.target !== '_blank')) {
                     // React links update history without hashchange, including clicks proxied by themes.
                     if (link && link.closest('header.MuiAppBar-root, .MuiDrawer-paper') && href.indexOf('#/') === 0) {
                         setTimeout(function () { self.ensureNativeTabs(); }, 0);
                     }
+
                     return;
                 }
+
                 event.preventDefault();
                 // Themes can proxy hidden drawer links; only bubble when the drawer needs closing.
                 if (hiddenDrawer) event.stopPropagation();
+
                 window.location.hash = href;
                 self.syncModernNavigation();
-                self.ensureNativeTabs().then(function () { if (tabId) self.scheduleRender(); });
+                self.ensureNativeTabs().then(function () {
+                    if (tabId) self.scheduleRender();
+                });
             }, true);
         },
 
         ensureModernNavigationLinks: function (config) {
             const self = this;
             const tabsById = {};
-            (config.tabs || []).forEach(function (tab) {
-                tabsById[tab.id] = tab;
-            });
+            (config.tabs || []).forEach(function (tab) { tabsById[tab.id] = tab; });
+
             const desired = (config.tabBarOrder || []).map(function (key) {
                 const id = key.indexOf('sf:') === 0 ? key.slice(3) : '';
                 const tab = tabsById[id];
                 return tab && tab.enabled !== false ? tab : null;
             }).filter(Boolean);
-            const icons = { movies: 'movie', tv: 'tv', discover: 'explore', requests: 'download', watchlist: 'bookmark', letterboxd: 'bookmark' };
+            const icons = {
+                movies: 'movie',
+                tv: 'tv',
+                discover: 'explore',
+                requests: 'download',
+                watchlist: 'bookmark',
+                letterboxd: 'bookmark'
+            };
 
             document.querySelectorAll('header.MuiAppBar-root .MuiToolbar-root > .MuiStack-root, .MuiDrawer-paper ul.MuiList-root').forEach(function (nav) {
                 const drawer = nav.matches('ul');
                 const runtimeLinks = Array.from(nav.querySelectorAll(':scope > [data-seerrfin-runtime-nav]'));
+
                 if (nav.querySelector('a[href^="#/home?seerrfinTab="]:not([data-seerrfin-runtime-nav])')) {
                     runtimeLinks.forEach(function (link) { link.remove(); });
                     return;
                 }
 
                 const favorite = nav.querySelector('a[href^="#/home?tab=1"]');
-                if (!favorite) {
-                    return;
-                }
+
+                if (!favorite) { return; }
 
                 const desiredIds = new Set(desired.map(function (tab) { return tab.id; }));
                 runtimeLinks.forEach(function (link) {
@@ -914,15 +919,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         link.remove();
                     }
                 });
-
                 let previous = drawer ? favorite.parentElement : favorite;
+
                 desired.forEach(function (tab) {
                     let link = nav.querySelector('a[data-seerrfin-runtime-nav="' + tab.id + '"]');
+
                     if (!link) {
                         link = favorite.cloneNode(false);
                         link.removeAttribute('data-sleekfin-current');
                         link.removeAttribute('data-sleekfin-header-link');
                         link.dataset.seerrfinRuntimeNav = tab.id;
+
                         if (drawer) {
                             const item = favorite.parentElement.cloneNode(false);
                             item.dataset.seerrfinRuntimeNav = tab.id;
@@ -931,6 +938,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     }
 
                     const title = self.resolveTabTitle(tab.id, tab.title);
+
                     if (link.dataset.seerrfinRuntimeTitle !== title) {
                         const iconContainer = (drawer ? favorite.querySelector('.MuiListItemIcon-root') : favorite.firstElementChild).cloneNode(false);
                         const icon = document.createElement('span');
@@ -938,6 +946,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         icon.setAttribute('aria-hidden', 'true');
                         icon.textContent = icons[tab.id] || 'bookmark';
                         iconContainer.appendChild(icon);
+
                         if (drawer) {
                             const label = favorite.querySelector('.MuiListItemText-root').cloneNode(true);
                             label.firstElementChild.textContent = title;
@@ -945,14 +954,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         } else {
                             link.replaceChildren(iconContainer, title);
                         }
+
                         link.dataset.seerrfinRuntimeTitle = title;
                     }
 
                     link.setAttribute('href', '#/home?seerrfinTab=' + tab.id);
                     const node = drawer ? link.parentElement : link;
+
                     if (previous.nextSibling !== node) {
                         nav.insertBefore(node, previous.nextSibling);
                     }
+
                     previous = node;
                 });
             });
@@ -961,21 +973,24 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         syncModernNavigation: function () {
             const self = this;
             const activeId = self.getActiveModernNavId();
+
             document.querySelectorAll('header.MuiAppBar-root a[href], .MuiDrawer-paper a[href], #user-view-overflow-menu a[href], .customMenuOptions a[href]').forEach(function (link) {
                 const id = self.getModernNavId(link);
-                if (!id) {
-                    return;
-                }
+
+                if (!id) { return; }
+
                 link.dataset.seerrfinMenuNav = id;
                 const active = activeId === id;
                 const isHeaderLink = !!link.closest('header.MuiAppBar-root');
                 link.classList.toggle('Mui-selected', active && !isHeaderLink);
+
                 if (isHeaderLink) {
                     link.classList.toggle('MuiButton-textPrimary', active);
                     link.classList.toggle('MuiButton-colorPrimary', active);
                     link.classList.toggle('MuiButton-textInherit', !active);
                     link.classList.toggle('MuiButton-colorInherit', !active);
                 }
+
                 if (active && link.getAttribute('aria-current') !== 'page') {
                     link.setAttribute('aria-current', 'page');
                 } else if (!active && link.hasAttribute('aria-current')) {
@@ -986,20 +1001,24 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         restoreHomeTabSelection: function (page, tabs) {
             if (typeof tabs.selectedIndex !== 'function') return;
+
             const route = new URLSearchParams(window.location.hash.split('?')[1] || '');
             const tabId = route.get('seerrfinTab');
             const namedButton = tabId && Array.from(tabs.querySelectorAll('[data-seerrfin-tab]')).find(function (button) {
                 return button.dataset.seerrfinTab === tabId && !button.classList.contains('hide');
             });
             const namedIndex = namedButton ? parseInt(namedButton.dataset.index, 10) : 0;
+
             if (page.dataset.seerrfinTabRoute === window.location.hash && page._seerrfinTabsElement === tabs &&
                 page._seerrfinTabRouteMatched && (!tabId || tabs.selectedIndex() === namedIndex)) return;
+
             page.dataset.seerrfinTabRoute = window.location.hash;
             page._seerrfinTabsElement = tabs;
             const match = /[?&]tab=(\d+)/.exec(window.location.hash);
             const selected = tabId ? namedIndex : (match ? parseInt(match[1], 10) : 0);
             const button = tabs.querySelector('.emby-tab-button:not(.hide)[data-index="' + selected + '"]');
             page._seerrfinTabRouteMatched = !!button;
+
             // Restore deep links after the React home/header have mounted and plugin panels exist
             if (button) {
                 tabs.selectedIndex(selected);
@@ -1010,21 +1029,22 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         ensureModernContent: function (config) {
             const main = document.querySelector('main');
+
             if (!main) return false;
+
             const modern = !!document.querySelector('header.MuiAppBar-root');
-            const slots = modern ? this.buildDesiredBarSlots(config).filter(function (slot) {
-                return slot.type === 'seerrfin';
-            }) : [];
+            const slots = modern ? this.buildDesiredBarSlots(config).filter(function (slot) { return slot.type === 'seerrfin'; }) : [];
             const id = this.isHomeRoute() ? this.getActiveModernNavId() : null;
             const active = slots.find(function (slot) { return slot.id === id; });
             main.classList.toggle('seerrfin-modern-active', !!active);
-
             let panel = null;
+
             main.querySelectorAll(':scope > [data-seerrfin-modern-panel]').forEach(function (candidate) {
                 if (!slots.some(function (slot) { return slot.id === candidate.dataset.seerrfinTab; })) {
                     candidate.remove();
                     return;
                 }
+
                 if (active && candidate.dataset.seerrfinTab === id) panel = candidate;
                 else candidate.classList.remove('is-active');
             });
@@ -1036,20 +1056,21 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     panel.setAttribute('data-seerrfin-modern-panel', '');
                     main.appendChild(panel);
                 }
+
                 if (!panel.classList.contains('is-active')) {
                     panel.classList.add('is-active');
                     this.onSeerrFinTabShown();
                 }
             }
+
             return modern;
         },
 
         ensureNativeTabs: function () {
             const self = this;
             self.syncModernNavigation();
-            if (self._tabsEnsuring) {
-                return self._tabsEnsuring;
-            }
+
+            if (self._tabsEnsuring) { return self._tabsEnsuring; }
 
             self._tabsEnsuring = self.loadTabConfig().then(function (config) {
                 self.ensureModernNavigationLinks(config);
@@ -1072,12 +1093,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     const page = self.findActiveHomePage();
                     const tabsSlider = document.querySelector('.headerTabs .emby-tabs-slider');
                     const tabsEl = document.querySelector('.headerTabs [is="emby-tabs"]');
+
                     if (!page || !tabsSlider || !tabsEl) {
                         return;
                     }
 
                     self.attachPluginTabGuard(tabsEl);
-
                     const slots = self.includeExternalTabSlots(page, tabsSlider, self.buildDesiredBarSlots(config));
                     const desiredSig = self.barPlacementSignature(slots);
                     const currentSig = self.readCurrentBarSignature(tabsSlider);
@@ -1085,12 +1106,15 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         if (slot.type === 'seerrfin') {
                             return !!page.querySelector('.tabContent[data-seerrfin-tab="' + slot.id + '"]');
                         }
+
                         if (slot.type === 'customtabs') {
                             return !!page.querySelector('[id="customTab_' + slot.index + '"]');
                         }
+
                         if (slot.type === 'reserved') {
                             return !!page.querySelector('.tabContent[data-seerrfin-reserved-index="' + slot.index + '"]');
                         }
+
                         return true;
                     });
 
@@ -1098,16 +1122,14 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         self.applyTabTitles(tabsSlider, slots);
                         self.restoreHomeTabSelection(page, tabsEl);
                         self.syncModernNavigation();
+
                         return;
                     }
 
-                    if (!self.applyBarOrder(page, tabsSlider, slots)) {
-                        return;
-                    }
+                    if (!self.applyBarOrder(page, tabsSlider, slots)) { return; }
 
                     self.restoreHomeTabSelection(page, tabsEl);
                     self.syncModernNavigation();
-
                     log.info('native tab bar ready: ' + slots.map(function (s) { return s.key; }).join(', '));
 
                     if (typeof tabsEl.refresh === 'function') {
@@ -1118,11 +1140,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         }
                     }
                 });
-            }).catch(function (err) {
-                log.error('failed to ensure native tabs', err);
-            }).then(function () {
-                self._tabsEnsuring = null;
-            });
+            }).catch(function (err) { log.error('failed to ensure native tabs', err); }).then(function () { self._tabsEnsuring = null; });
 
             return self._tabsEnsuring;
         },
@@ -1137,6 +1155,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         if (!self.isHomeTabContext()) {
                             return;
                         }
+
                         self.scheduleRender();
                     });
                 } else {
@@ -1155,6 +1174,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     }, 50);
                 }
             };
+
             window.addEventListener('hashchange', scheduleTabs);
 
             if (!self._ctButtonObserver && typeof MutationObserver !== 'undefined') {
@@ -1162,15 +1182,18 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     const selector = '.skinHeader, .headerTabs, #indexPage, main, header.MuiAppBar-root, .MuiDrawer-paper, #user-view-overflow-menu, .customMenuOptions';
                     const relevant = records.some(function (record) {
                         const target = record.target;
+
                         if (target.nodeType === 1 && target.closest(selector)) {
                             if (!target.closest('main, #indexPage') || target.matches('main, #indexPage')) { // Card and image rendering within the page doesnt affect the tab bar
                                 return true;
                             }
                         }
+
                         return Array.from(record.addedNodes).concat(Array.from(record.removedNodes)).some(function (node) {
                             return node.nodeType === 1 && (node.matches(selector) || node.querySelector(selector));
                         });
                     });
+
                     if (relevant) scheduleTabs();
                 });
                 // Jellyfin 12 can mount or replace the React page/header after boot
@@ -1187,38 +1210,37 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         isGridViewOpen: function (container) {
-            if (!container) {
-                return false;
-            }
+            if (!container) { return false; }
 
             const children = Array.from(container.children);
+
             for (let i = 0; i < children.length; i++) {
                 const child = children[i];
+
                 if (child.hasAttribute('data-seerrfin-grid-view') && child.style.display !== 'none') {
                     return true;
                 }
             }
+
             return false;
         },
 
         renderIfContainerVisible: function (type) {
             const selector = '.seerrfin-' + type + '-sections';
             const container = this.findActiveContainer(selector);
-            if (!container) {
-                return;
-            }
 
-            if (this.isContainerLoading(container)) {
-                return;
-            }
+            if (!container) { return; }
+            if (this.isContainerLoading(container)) { return; }
 
             const self = this;
+
             this.loadDisplaySettings().then(function () {
                 const settingsKey = self.getDisplaySettingsKey();
 
                 if (container.dataset.seerrfinDisplaySettings !== settingsKey) {
                     log.info(type + ' tab display settings changed, clearing container');
                     container.dataset.seerrfinDisplaySettings = settingsKey;
+
                     if (self.isContainerPopulated(container) || (type === 'discover' && container.querySelector('.seerrfin-discover-panel'))) {
                         container.innerHTML = '';
                         delete container.dataset.seerrfinLoaded;
@@ -1226,29 +1248,28 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     }
                 }
 
-                if (self.isContainerPopulated(container)) {
-                    return;
-                }
+                if (self.isContainerPopulated(container)) { return; }
 
                 const hasError = container.querySelector('.seerrfin-empty-row');
+
                 if (hasError && container.dataset.seerrfinLoaded === 'true') {
                     return;
                 }
 
                 self.loadTab(type, container);
-            }).catch(function (err) {
-                log.error(type + ' tab render aborted: display settings failed', err);
-            });
+            }).catch(function (err) { log.error(type + ' tab render aborted: display settings failed', err); });
         },
 
         loadTab: function (type, container) {
             if (!container) {
                 container = this.findActiveContainer('.seerrfin-' + type + '-sections');
             }
+
             if (!container || !this.isContainerVisible(container) || this.isGridViewOpen(container)) {
                 if (container && !this.isContainerVisible(container)) {
                     log.info(type + ' tab skip load: container not visible');
                 }
+
                 return;
             }
 
@@ -1265,7 +1286,6 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const mediaType = type === 'movies' ? 'movie' : 'tv';
             const self = this;
             const loadId = String(Date.now()) + '-' + Math.random().toString(16).slice(2);
-
             log.info('loading ' + type + ' tab (' + rows.length + ' rows)');
             container.dataset.seerrfinLoading = 'true';
             container.dataset.seerrfinLoadId = loadId;
@@ -1277,6 +1297,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     log.info(type + ' tab load finished but was superseded');
                     return;
                 }
+
                 container.dataset.seerrfinLoading = 'false';
                 container.dataset.seerrfinLoaded = 'true';
                 log.info(type + ' tab load complete');
@@ -1333,28 +1354,29 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
                 const checkAllDone = function () {
                     completedSlots++;
-                    if (completedSlots < totalSlots) {
-                        return;
-                    }
+
+                    if (completedSlots < totalSlots) { return; }
+
                     if (!anySuccess && !isStale()) {
                         log.error(type + ' tab: all discovery rows/carousels failed');
                         showLoadFailure();
                     }
+
                     finishLoading();
                 };
 
                 const replaceSkeleton = function (skeleton, node) {
-                    if (isStale()) {
-                        return;
-                    }
+                    if (isStale()) { return; }
 
                     if (node) {
                         node.classList.add('seerrfin-section-fadein');
+
                         if (skeleton && skeleton.parentNode) {
                             skeleton.replaceWith(node);
                         } else {
                             container.appendChild(node);
                         }
+
                         self.refreshScrollers(container);
                     } else if (skeleton && skeleton.parentNode) {
                         skeleton.remove();
@@ -1365,10 +1387,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
                 rowSlots.forEach(function (slot) {
                     self.fetchDiscover(slot.row.path).then(function (result) {
-                        if (isStale()) {
-                            return;
-                        }
+                        if (isStale()) { return; }
+
                         anySuccess = true;
+
                         try {
                             replaceSkeleton(slot.skeleton, self.buildPosterRow(slot.row.title, result.items, slot.row.path, {
                                 total: result.total
@@ -1385,16 +1407,18 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
                 carouselSlots.forEach(function (slot) {
                     self.fetchJson(slot.def.path).then(function (data) {
-                        if (isStale()) {
-                            return;
-                        }
+                        if (isStale()) { return; }
+
                         const items = self.asArray(data);
+
                         if (!items.length) {
                             log.warn('carousel empty: ' + slot.def.path);
                             replaceSkeleton(slot.skeleton, null);
                             return;
                         }
+
                         anySuccess = true;
+
                         try {
                             replaceSkeleton(slot.skeleton, self.buildCarouselSection(slot.def.title, items, mediaType, slot.def.kind));
                         } catch (err) {
@@ -1407,9 +1431,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     }).finally(checkAllDone);
                 });
             }).catch(function (err) {
-                if (isStale()) {
-                    return;
-                }
+                if (isStale()) { return; }
+
                 log.error(type + ' tab load failed', err);
                 container.dataset.seerrfinLoading = 'false';
                 container.dataset.seerrfinLoaded = 'true';
@@ -1418,11 +1441,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         loadDiscoverTab: function (container) {
-            if (container.querySelector('.seerrfin-discover-panel')) {
-                return;
-            }
+            if (container.querySelector('.seerrfin-discover-panel')) { return; }
 
             const panelId = 'seerrfin-discover-' + (this._discoverPanelId = (this._discoverPanelId || 0) + 1);
+
             container.innerHTML = `
                 <div class="verticalSection seerrfin-discover-panel">
                     <div class="sectionTitleContainer sectionTitleContainer-cards padded-left padded-right">
@@ -1438,9 +1460,11 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     </div>
                 </div>
                 <div id="${panelId}-movies" class="seerrfin-discover-body" data-discover-panel="movies" role="tabpanel" aria-labelledby="${panelId}-movies-tab" tabindex="0"></div>
-                <div id="${panelId}-tv" class="seerrfin-discover-body" data-discover-panel="tv" role="tabpanel" aria-labelledby="${panelId}-tv-tab" tabindex="0" hidden></div>`;
+                <div id="${panelId}-tv" class="seerrfin-discover-body" data-discover-panel="tv" role="tabpanel" aria-labelledby="${panelId}-tv-tab" tabindex="0" hidden></div>
+            `;
 
             const self = this;
+
             function selectTab(button) {
                 container.querySelectorAll('[data-discover-type]').forEach(function (tab) {
                     const active = tab === button;
@@ -1452,6 +1476,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     panel.hidden = panel.dataset.discoverPanel !== button.dataset.discoverType;
                 });
                 const body = container.querySelector('[data-discover-panel="' + button.dataset.discoverType + '"]');
+
                 if (body && !self.isContainerLoading(body) && body.dataset.seerrfinLoaded !== 'true') {
                     self.loadTab(button.dataset.discoverType, body);
                 }
@@ -1464,21 +1489,26 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         window.location.hash = '#/home?seerrfinTab=requests&seerrfinFrom=discover';
                         return;
                     }
+
                     const button = event.target.closest('[data-discover-type]');
+
                     if (button && container.contains(button)) {
                         selectTab(button);
                     }
                 });
                 container.addEventListener('keydown', function (event) {
                     const button = event.target.closest('[data-discover-type]');
+
                     if (!button || !container.contains(button)) {
                         return;
                     }
+
                     const tabs = Array.from(container.querySelectorAll('[data-discover-type]'));
                     const index = tabs.indexOf(button);
-                    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1
-                        : event.key === 'ArrowRight' ? (index + 1) % tabs.length
-                            : event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : -1;
+                    const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 :
+                        event.key === 'ArrowRight' ? (index + 1) % tabs.length :
+                        event.key === 'ArrowLeft' ? (index + tabs.length - 1) % tabs.length : -1;
+
                     if (next !== -1) {
                         event.preventDefault();
                         selectTab(tabs[next]);
@@ -1486,124 +1516,66 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     }
                 });
             }
+
             this.loadTab('movies', container.querySelector('[data-discover-panel="movies"]'));
         },
 
         fetchDiscover: function (path, query) {
             let url = ApiClient.getUrl('SeerrFin/' + path);
+
             if (query) {
                 url += query;
             }
-            return ApiClient.ajax({
-                url: url,
-                type: 'GET',
-                dataType: 'json'
-            }).then(function (data) {
+
+            return ApiClient.ajax({ url: url, type: 'GET', dataType: 'json' }).then(function (data) {
                 const items = data && (data.Items || data.items || data.Results || data.results);
                 const total = data && (data.TotalRecordCount ?? data.totalRecordCount ?? 0);
-                return {
-                    items: Array.isArray(items) ? items : [],
-                    total: total
-                };
+                return { items: Array.isArray(items) ? items : [], total: total };
             });
         },
 
         fetchJson: function (path) {
-            return ApiClient.ajax({
-                url: ApiClient.getUrl('SeerrFin/' + path),
-                type: 'GET',
-                dataType: 'json'
-            });
+            return ApiClient.ajax({ url: ApiClient.getUrl('SeerrFin/' + path), type: 'GET', dataType: 'json' });
         },
 
         loadDisplaySettings: function () {
             const self = this;
-            if (self._displaySettingsPromise) {
-                return self._displaySettingsPromise;
-            }
+
+            if (self._displaySettingsPromise) { return self._displaySettingsPromise; }
 
             const hadDisplaySettings = !!self._displaySettings;
             const previousSettingsKey = hadDisplaySettings ? self.getDisplaySettingsKey() : '';
+
             self._displaySettingsPromise = ApiClient.ajax({
                 url: ApiClient.getUrl('SeerrFin/display-settings') + '?_=' + Date.now(),
                 type: 'GET',
                 dataType: 'json',
                 cache: false
             }).then(function (data) {
-                self._tabSettingsSnapshot = {
-                    tabs: data && data.tabs,
-                    tabBarOrder: data && data.tabBarOrder
-                };
+                self._tabSettingsSnapshot = { tabs: data && data.tabs, tabBarOrder: data && data.tabBarOrder };
                 self._displaySettings = {
-                    StreamingServiceUseImages: self.readConfigBool(
-                        data,
-                        'StreamingServiceUseImages',
-                        'streamingServiceUseImages',
-                        true
-                    ),
-                    StudioNetworkUseImages: self.readConfigBool(
-                        data,
-                        'StudioNetworkUseImages',
-                        'studioNetworkUseImages',
-                        true
-                    ),
-                    GenreUseBackdrops: self.readConfigBool(
-                        data,
-                        'GenreUseBackdrops',
-                        'genreUseBackdrops',
-                        true
-                    ),
-                    DiscoverUsePosters: self.readConfigBool(
-                        data,
-                        'DiscoverUsePosters',
-                        'discoverUsePosters',
-                        true
-                    ),
-                    ElegantFinFixes: self.readConfigBool(
-                        data,
-                        'ElegantFinFixes',
-                        'elegantFinFixes',
-                        false
-                    ),
-                    QualityRecommendations: self.readConfigBool(
-                        data,
-                        'QualityRecommendations',
-                        'qualityRecommendations',
-                        true
-                    ),
-                    AddSeerrResultsInSearch: self.readConfigBool(
-                        data,
-                        'AddSeerrResultsInSearch',
-                        'addSeerrResultsInSearch',
-                        true
-                    ),
-                    NativeCarousels: self.readConfigBool(
-                        data,
-                        'NativeCarousels',
-                        'nativeCarousels',
-                        false
-                    ),
-                    NativeGridPages: self.readConfigBool(
-                        data,
-                        'NativeGridPages',
-                        'nativeGridPages',
-                        false
-                    ),
-                    NativeSearchResults: self.readConfigBool(
-                        data,
-                        'NativeSearchResults',
-                        'nativeSearchResults',
-                        false
-                    ),
+                    StreamingServiceUseImages: self.readConfigBool(data, 'StreamingServiceUseImages', 'streamingServiceUseImages', true),
+                    StudioNetworkUseImages: self.readConfigBool(data, 'StudioNetworkUseImages', 'studioNetworkUseImages', true),
+                    GenreUseBackdrops: self.readConfigBool(data, 'GenreUseBackdrops', 'genreUseBackdrops', true),
+                    DiscoverUsePosters: self.readConfigBool(data, 'DiscoverUsePosters', 'discoverUsePosters', true),
+                    ElegantFinFixes: self.readConfigBool(data, 'ElegantFinFixes', 'elegantFinFixes', false),
+                    QualityRecommendations: self.readConfigBool(data, 'QualityRecommendations', 'qualityRecommendations', true),
+                    AddSeerrResultsInSearch: self.readConfigBool(data, 'AddSeerrResultsInSearch', 'addSeerrResultsInSearch', true),
+                    NativeCarousels: self.readConfigBool(data, 'NativeCarousels', 'nativeCarousels', false),
+                    NativeGridPages: self.readConfigBool(data, 'NativeGridPages', 'nativeGridPages', false),
+                    NativeSearchResults: self.readConfigBool(data, 'NativeSearchResults', 'nativeSearchResults', false),
                     DisplayCustomizations: self.parseDisplayCustomizations(data),
                     Advanced: self.parseAdvancedSettings(data)
                 };
                 self.applyAdvancedSettings(self._displaySettings.Advanced);
                 self.syncElegantFinFixes();
+
                 if (hadDisplaySettings && previousSettingsKey !== self.getDisplaySettingsKey()) {
                     self.clearBackdropCaches();
                 }
+
                 log.info('display settings loaded');
+
                 return self._displaySettings;
             }).catch(function (err) {
                 log.warn('display settings fetch failed, using defaults', err);
@@ -1624,9 +1596,11 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 };
                 self.applyAdvancedSettings(self._displaySettings.Advanced);
                 self.syncElegantFinFixes();
+
                 if (hadDisplaySettings && previousSettingsKey !== self.getDisplaySettingsKey()) {
                     self.clearBackdropCaches();
                 }
+
                 return self._displaySettings;
             }).then(function (settings) {
                 self._displaySettingsPromise = null;
@@ -1640,6 +1614,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             if (value === true || value === false) {
                 return value;
             }
+
             return fallback;
         },
 
@@ -1652,10 +1627,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const requestModal = root.requestModal || root.RequestModal || {};
             const tmdb = root.tmdb || root.Tmdb || {};
             const letterboxd = root.letterboxd || root.Letterboxd || {};
+
             return {
-                discovery: {
-                    gridPageSize: discovery.gridPageSize ?? discovery.GridPageSize ?? 40
-                },
+                discovery: { gridPageSize: discovery.gridPageSize ?? discovery.GridPageSize ?? 40 },
                 carousel: {
                     carouselScrollThreshold: carousel.carouselScrollThreshold ?? carousel.CarouselScrollThreshold ?? 1200,
                     discoverRowFocusScale: self.readAdvancedBool(carousel.discoverRowFocusScale ?? carousel.DiscoverRowFocusScale, true),
@@ -1714,14 +1688,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         getAdvancedCarouselSetting: function (key, fallback) {
             const carousel = (this._advancedSettings || {}).carousel || {};
             const value = carousel[key];
+
             if (value === true || value === false) {
                 return value;
             }
+
             return fallback;
         },
 
         parseDisplayCustomizations: function (data) {
             const root = (data && (data.DisplayCustomizations || data.displayCustomizations)) || {};
+
             return {
                 StreamingService: root.StreamingService || root.streamingService || {},
                 StudioNetwork: root.StudioNetwork || root.studioNetwork || {},
@@ -1732,6 +1709,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         getDisplaySettingsKey: function () {
             const settings = this._displaySettings || {};
+
             return [
                 settings.StreamingServiceUseImages,
                 settings.StudioNetworkUseImages,
@@ -1754,9 +1732,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         normalizeHexColor: function (value, fallback) {
             const raw = String(value || fallback || '').replace('#', '').trim();
-            if (/^[0-9a-fA-F]{6}$/.test(raw)) {
-                return raw.toLowerCase();
-            }
+
+            if (/^[0-9a-fA-F]{6}$/.test(raw)) { return raw.toLowerCase(); }
 
             return String(fallback || 'ffffff').replace('#', '').toLowerCase();
         },
@@ -1787,15 +1764,14 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         buildTmdbImageUrl: function (path, styleKey, size) {
-            if (!path) {
-                return null;
-            }
+            if (!path) { return null; }
 
             const pathNorm = path.startsWith('/') ? path : '/' + path;
             let sizePart = size || 'w780';
 
             if (styleKey) {
                 const style = this.getDisplayStyle(styleKey);
+
                 if (style.duotoneEnabled) {
                     sizePart += '_filter(duotone,' + style.duotoneDark + ',' + style.duotoneLight + ')';
                 }
@@ -1806,22 +1782,19 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         buildDiscoverPosterUrl: function (item) {
             const posterPath = this.getProviderId(item, 'TmdbPosterPath');
+
             if (this.getDisplayStyle('discoverBackdrop').duotoneEnabled && posterPath) {
                 return this.buildTmdbImageUrl(posterPath, 'discoverBackdrop', 'w600_and_h900_bestv2');
             }
 
             let posterUrl = this.getProviderId(item, 'JellyseerrPoster');
+
             if (posterUrl && !posterUrl.startsWith('http')) {
                 posterUrl = window.ApiClient.getUrl(posterUrl);
             }
 
-            if (posterUrl) {
-                return posterUrl;
-            }
-
-            if (posterPath) {
-                return this.buildTmdbImageUrl(posterPath, null, 'w600_and_h900_bestv2');
-            }
+            if (posterUrl) { return posterUrl; }
+            if (posterPath) { return this.buildTmdbImageUrl(posterPath, null, 'w600_and_h900_bestv2'); }
 
             return null;
         },
@@ -1850,12 +1823,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         resolveImageUrl: function (url) {
-            if (!url) {
-                return '';
-            }
-            if (url.startsWith('http')) {
-                return url;
-            }
+            if (!url) { return ''; }
+            if (url.startsWith('http')) { return url; }
+
             return window.ApiClient.getUrl(url);
         },
 
@@ -1881,21 +1851,19 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 self._tabSettingsSnapshot = null;
                 self._tabConfig = null;
                 self._tabConfigPromise = null;
+
                 return self.loadDisplaySettings();
-            }).then(function () {
-                return self.ensureNativeTabs();
-            }).then(function () {
+            }).then(function () { return self.ensureNativeTabs(); }).then(function () {
                 self.scheduleRender();
                 self.handleJellyfinSearchPage();
             });
         },
 
         readConfigBool: function (data, pascalKey, camelKey, defaultValue) {
-            if (!data) {
-                return defaultValue;
-            }
+            if (!data) { return defaultValue; }
 
             const value = data[pascalKey] ?? data[camelKey];
+
             if (value === true || value === false) {
                 return value;
             }
@@ -1905,12 +1873,13 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         shouldShowLogo: function (kind) {
             const settings = this._displaySettings || {};
-            if (kind === 'provider') {
-                return settings.StreamingServiceUseImages !== false;
-            }
+
+            if (kind === 'provider') { return settings.StreamingServiceUseImages !== false; }
+
             if (kind === 'studio' || kind === 'network') {
                 return settings.StudioNetworkUseImages !== false;
             }
+
             return false;
         },
 
@@ -1930,13 +1899,13 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         aria-label="Open request modal" title="Open request modal">
                         <span class="material-icons" aria-hidden="true">download</span>
                     </button>
-                </div>`;
+                </div>
+            `;
         },
 
         wrapDiscoverCard: function (cardHtml, options) {
-            if (!options.letterboxdSlot) {
-                return cardHtml;
-            }
+            if (!options.letterboxdSlot) { return cardHtml; }
+
             return `<div class="seerrfin-letterboxd-card-slot">${cardHtml}</div>`;
         },
 
@@ -1951,9 +1920,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             const useBackdrop = kind === 'poster' && this.shouldUseBackdropThumbnails();
-            const cardClass = kind === 'carousel'
-                ? 'seerrfin-skeleton-card seerrfin-skeleton-card--carousel'
-                : `seerrfin-skeleton-card seerrfin-skeleton-card--poster${useBackdrop ? ' seerrfin-skeleton-card--backdrop' : ''}`;
+            const cardClass = kind === 'carousel' ?
+                'seerrfin-skeleton-card seerrfin-skeleton-card--carousel' :
+                `seerrfin-skeleton-card seerrfin-skeleton-card--poster${useBackdrop ? ' seerrfin-skeleton-card--backdrop' : ''}`;
             const count = kind === 'carousel' ? 6 : 8;
             const cards = Array.from({ length: count }, function () {
                 return `<div class="${cardClass}"></div>`;
@@ -1965,7 +1934,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         <div class="seerrfin-skeleton-title" aria-label="${this.escapeHtml(title || 'Loading')}"></div>
                     </div>
                     <div class="seerrfin-skeleton-track padded-left">${cards}</div>
-                </div>`);
+                </div>
+            `);
         },
 
         buildPosterRow: function (title, items, path, options) {
@@ -1980,22 +1950,26 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                             <h2 class="sectionTitle sectionTitle-cards">${safeTitle}</h2>
                         </div>
                         <div class="seerrfin-empty-row padded-left">No items to show</div>
-                    </div>`);
+                    </div>
+                `);
             }
 
             const viewMoreBtn = path && items.length > 0 ? `
                 <button type="button" class="seerrfin-view-more" data-path="${this.escapeHtml(path)}" data-title="${safeTitle}">
                     View more \u2192
-                </button>` : '';
+                </button>
+            ` : '';
 
             let pathAttrs = '';
+
             if (path) {
                 const total = parseInt(options.total || '0', 10);
                 pathAttrs = ` data-path="${this.escapeHtml(path)}" data-loaded-count="${items.length}" data-total="${total}" data-has-more="${total === 0 || items.length < total}" data-native-cards="${useNativeCards ? 'true' : 'false'}"`;
             }
-            const containerClass = useNativeCards
-                ? 'itemsContainer scrollSlider focuscontainer-x animatedScrollX'
-                : 'itemsContainer scrollSlider focuscontainer-x';
+
+            const containerClass = useNativeCards ?
+                'itemsContainer scrollSlider focuscontainer-x animatedScrollX' :
+                'itemsContainer scrollSlider focuscontainer-x';
 
             const section = this.mountFromHtml(`
                 <div class="verticalSection seerrfin-poster-section"${pathAttrs}>
@@ -2004,17 +1978,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         ${viewMoreBtn}
                     </div>
                     <div is="emby-itemscontainer" class="${containerClass}" data-monitor="videoplayback,markplayed"></div>
-                </div>`);
+                </div>
+            `);
 
             const itemsContainer = section.querySelector('.itemsContainer');
-            itemsContainer.innerHTML = this.createDiscoverCards(items, false, {
-                nativeCards: useNativeCards
-            });
+            itemsContainer.innerHTML = this.createDiscoverCards(items, false, { nativeCards: useNativeCards });
             this.appendHorizontalScroller(section, itemsContainer, {
                 focusScale: this.getAdvancedCarouselSetting('discoverRowFocusScale', true),
                 scrollEvent: this.getAdvancedCarouselSetting('enableRowInfiniteScroll', true)
             });
             this.initNativeOrCustomCards(itemsContainer, useNativeCards);
+
             return section;
         },
 
@@ -2023,7 +1997,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 if (this.shouldUseBackdropThumbnails()) {
                     this.hydrateNativeBackdropCards(container);
                 }
+
                 this.initLazyImages(container);
+
                 return;
             }
 
@@ -2039,11 +2015,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 return;
             }
 
-            if (section.dataset.seerrfinRowScrollBound === 'true') {
-                return;
-            }
+            if (section.dataset.seerrfinRowScrollBound === 'true') { return; }
 
             const scroller = section.querySelector('[is="emby-scroller"]');
+
             if (!scroller || !section.dataset.path) {
                 return;
             }
@@ -2051,33 +2026,27 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             if (!scroller.scroller || typeof scroller.addScrollEventListener !== 'function') {
                 const retries = parseInt(section.dataset.seerrfinRowScrollRetries || '0', 10);
                 const maxRetries = this._rowScrollBindRetries || 10;
-                if (retries >= maxRetries) {
-                    return;
-                }
+
+                if (retries >= maxRetries) { return; }
+
                 section.dataset.seerrfinRowScrollRetries = String(retries + 1);
                 const self = this;
-                requestAnimationFrame(function () {
-                    self.bindRowInfiniteScroll(section);
-                });
+                requestAnimationFrame(function () { self.bindRowInfiniteScroll(section); });
+
                 return;
             }
 
             delete section.dataset.seerrfinRowScrollRetries;
             section.dataset.seerrfinRowScrollBound = 'true';
             section._seerrfinRowScroller = scroller;
-
             const self = this;
-            scroller.addScrollEventListener(function () {
-                self.scheduleRowScrollCheck(section);
-            }, { passive: true });
-
+            scroller.addScrollEventListener(function () { self.scheduleRowScrollCheck(section); }, { passive: true });
             self.scheduleRowScrollCheck(section);
         },
 
         scheduleRowScrollCheck: function (section) {
-            if (section._seerrfinRowScrollRaf) {
-                return;
-            }
+            if (section._seerrfinRowScrollRaf) { return; }
+
             const self = this;
             section._seerrfinRowScrollRaf = requestAnimationFrame(function () {
                 section._seerrfinRowScrollRaf = 0;
@@ -2091,6 +2060,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             const scroller = section._seerrfinRowScroller;
+
             if (!scroller || typeof scroller.getScrollPosition !== 'function' || typeof scroller.getScrollSize !== 'function') {
                 return;
             }
@@ -2110,13 +2080,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const self = this;
             const path = section.dataset.path;
             const itemsContainer = section.querySelector('.itemsContainer');
+
             if (!path || !itemsContainer || section.dataset.hasMore !== 'true') {
                 return;
             }
 
-            if (section.dataset.loading === 'true') {
-                return;
-            }
+            if (section.dataset.loading === 'true') { return; }
 
             const loadedCount = parseInt(section.dataset.loadedCount || '0', 10);
             const pageSize = self._gridPageSize;
@@ -2132,6 +2101,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 }
 
                 const total = parseInt(result.total || section.dataset.total || '0', 10);
+
                 if (total > 0) {
                     section.dataset.total = String(total);
                 }
@@ -2140,6 +2110,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 itemsContainer.querySelectorAll('[data-tmdb-id]').forEach(function (card) {
                     existingIds.add(card.getAttribute('data-tmdb-id'));
                 });
+
                 const newItems = result.items.filter(function (item) {
                     const id = String(self.getProviderId(item, 'Tmdb') ||
                         self.getProviderId(item, 'Jellyseerr') ||
@@ -2148,9 +2119,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 });
 
                 if (newItems.length) {
-                    itemsContainer.insertAdjacentHTML('beforeend', self.createDiscoverCards(newItems, false, {
-                        nativeCards: useNativeCards
-                    }));
+                    itemsContainer.insertAdjacentHTML('beforeend', self.createDiscoverCards(newItems, false, { nativeCards: useNativeCards }));
                     self.initNativeOrCustomCards(itemsContainer, useNativeCards);
                 }
 
@@ -2158,11 +2127,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 section.dataset.loadedCount = String(newCount);
                 const hasMore = result.items.length === pageSize && (total === 0 || newCount < total);
                 section.dataset.hasMore = String(hasMore);
-
                 const scroller = section._seerrfinRowScroller;
+
                 if (scroller && scroller.scroller && scroller.scroller.reload) {
                     scroller.scroller.reload();
                 }
+
                 self.scheduleRowScrollCheck(section);
             }).catch(function (err) {
                 section.dataset.loading = 'false';
@@ -2174,12 +2144,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const settings = options || {};
             const scroller = document.createElement('div');
             scroller.setAttribute('is', 'emby-scroller');
-            scroller.className = settings.focusScale
-                ? 'padded-top-focusscale padded-bottom-focusscale emby-scroller'
-                : 'emby-scroller';
+            scroller.className = settings.focusScale ? 'padded-top-focusscale padded-bottom-focusscale emby-scroller' : 'emby-scroller';
+
             if (this.getAdvancedCarouselSetting('enableCenterFocus', true)) {
                 scroller.setAttribute('data-centerfocus', 'true');
             }
+
             if (settings.scrollEvent) {
                 scroller.setAttribute('data-scrollevent', 'true');
             }
@@ -2193,9 +2163,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const safeTitle = this.escapeHtml(title);
             const useNativeCards = this.shouldUseNativeCarousels();
             const cardsHtml = (items || []).map(function (item) {
-                return useNativeCards
-                    ? window.seerrFinNativeUi.createBoxCard(self, item, mediaType, kind)
-                    : self.createBoxCard(item, mediaType, kind);
+                return useNativeCards ?
+                    window.seerrFinNativeUi.createBoxCard(self, item, mediaType, kind) :
+                    self.createBoxCard(item, mediaType, kind);
             }).join('');
 
             if (!cardsHtml) {
@@ -2205,28 +2175,32 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                             <h2 class="sectionTitle sectionTitle-cards">${safeTitle}</h2>
                         </div>
                         <div class="seerrfin-empty-row padded-left">No items to show</div>
-                    </div>`);
+                    </div>
+                `);
             }
 
-            const containerClass = useNativeCards
-                ? 'itemsContainer scrollSlider focuscontainer-x animatedScrollX'
-                : 'itemsContainer scrollSlider focuscontainer-x';
+            const containerClass = useNativeCards ?
+                'itemsContainer scrollSlider focuscontainer-x animatedScrollX' :
+                'itemsContainer scrollSlider focuscontainer-x';
             const section = this.mountFromHtml(`
                 <div class="verticalSection seerrfin-carousel-section">
                     <div class="sectionTitleContainer sectionTitleContainer-cards padded-left">
                         <h2 class="sectionTitle sectionTitle-cards">${safeTitle}</h2>
                     </div>
                     <div is="emby-itemscontainer" class="${containerClass}" data-monitor="videoplayback,markplayed"></div>
-                </div>`);
+                </div>
+            `);
 
             const itemsContainer = section.querySelector('.itemsContainer');
             itemsContainer.innerHTML = cardsHtml;
             this.appendHorizontalScroller(section, itemsContainer, {
                 focusScale: this.getAdvancedCarouselSetting('browseCarouselFocusScale', false)
             });
+
             if (useNativeCards) {
                 this.initLazyImages(itemsContainer);
             }
+
             return section;
         },
 
@@ -2235,24 +2209,21 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const name = item.name || 'Unknown';
             const safeName = this.escapeHtml(name);
             const showLogo = this.shouldShowLogo(kind);
-            const logoStyleKey = kind === 'provider'
-                ? 'streamingService'
-                : (kind === 'studio' || kind === 'network' ? 'studioNetwork' : null);
+            const logoStyleKey = kind === 'provider' ? 'streamingService' : (kind === 'studio' || kind === 'network' ? 'studioNetwork' : null);
             const logoPath = item.logo || item.logoPath;
-            const logoUrl = showLogo && logoStyleKey && logoPath && logoPath !== 'not found'
-                ? this.buildTmdbImageUrl(logoPath, logoStyleKey)
-                : null;
-
+            const logoUrl = showLogo && logoStyleKey && logoPath && logoPath !== 'not found' ? this.buildTmdbImageUrl(logoPath, logoStyleKey) : null;
             let extraClass = ' seerrfin-discover-card--fallback';
             let mediaHtml = '';
             let overlayTitleHtml = '';
 
             if (kind === 'genre' && (this._displaySettings || {}).GenreUseBackdrops !== false) {
                 const backdrops = item.backdrops || [];
+
                 if (backdrops.length) {
                     const mode = ((this._advancedSettings || {}).tmdb || {}).genreBackdropSelectionMode || 'random';
                     const backdropPath = mode === 'first' ? backdrops[0] : backdrops[Math.floor(Math.random() * backdrops.length)];
                     const backdropUrl = this.buildTmdbImageUrl(backdropPath, 'genreBackdrop');
+
                     if (backdropUrl) {
                         mediaHtml = `<span class="seerrfin-discover-backdrop-media" style="background-image: url('${this.escapeHtml(backdropUrl)}')"></span>`;
                     }
@@ -2278,23 +2249,18 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                             </div>
                         </div>
                     </div>
-                </div>`;
+                </div>
+            `;
         },
 
         buildBrowseGridPath: function (kind, mediaType, id) {
             const prefix = mediaType === 'tv' ? 'discover/tv' : 'discover/movies';
-            if (kind === 'genre') {
-                return prefix + '/genre/' + id;
-            }
-            if (kind === 'provider') {
-                return prefix + '/provider/' + id;
-            }
-            if (kind === 'studio') {
-                return 'discover/movies/studio/' + id;
-            }
-            if (kind === 'network') {
-                return 'discover/tv/network/' + id;
-            }
+
+            if (kind === 'genre') { return prefix + '/genre/' + id; }
+            if (kind === 'provider') { return prefix + '/provider/' + id; }
+            if (kind === 'studio') { return 'discover/movies/studio/' + id; }
+            if (kind === 'network') { return 'discover/tv/network/' + id; }
+
             return null;
         },
 
@@ -2311,20 +2277,20 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 }));
             }
 
-            if (useBackdrop) {
-                return this.createDiscoverBackdropCards(items, forGrid, options);
-            }
+            if (useBackdrop) { return this.createDiscoverBackdropCards(items, forGrid, options); }
+
             return this.createDiscoverPosterCards(items, forGrid, options);
         },
 
         normalizeDiscoverMediaType: function (value) {
             const normalized = String(value || '').toLowerCase();
+
             if (normalized === 'series' || normalized === 'tv') {
                 return 'tv';
             }
-            if (normalized === 'movie') {
-                return 'movie';
-            }
+
+            if (normalized === 'movie') { return 'movie'; }
+
             return value;
         },
 
@@ -2334,9 +2300,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const year = Number.isNaN(date.getFullYear()) ? '' : date.getFullYear();
             const rating = Number(self.getField(item, 'CommunityRating', 'communityRating') || 0);
             const starIcon = '<span class="material-icons" style="font-size:14px;vertical-align:middle;color:#FFD700;">star</span>';
-            const yearText = rating
-                ? `${starIcon} ${rating.toFixed(1)} • ${year}`
-                : `${starIcon} - • ${year}`;
+            const yearText = rating ?
+                `${starIcon} ${rating.toFixed(1)} • ${year}` :
+                `${starIcon} - • ${year}`;
+
             return { year: year, yearText: yearText };
         },
 
@@ -2355,11 +2322,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 const mediaId = self.getProviderId(item, 'Tmdb') ||
                     self.getProviderId(item, 'Jellyseerr') ||
                     self.getField(item, 'id', 'Id');
-                const mediaType = self.normalizeDiscoverMediaType(
-                    self.getField(item, 'SourceType', 'sourceType', 'mediaType', 'MediaType')
-                );
+                const mediaType = self.normalizeDiscoverMediaType(self.getField(item, 'SourceType', 'sourceType', 'mediaType', 'MediaType'));
                 const posterUrl = self.buildDiscoverPosterUrl(item);
                 const safeName = self.escapeHtml(self.getField(item, 'Name', 'name', 'OriginalTitle', 'originalTitle') || 'Unknown');
+
                 if (!mediaId || !mediaType) {
                     return;
                 }
@@ -2374,22 +2340,29 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                                 <span class="material-icons cardOverlayButtonIcon cardOverlayButtonIcon-hover add" aria-hidden="true"></span>
                             </button>
                         </div>
-                    </div>` : '';
+                    </div>
+                ` : '';
                 const metaHtml = includeMetaText ? (function () {
                     const meta = self.buildDiscoverYearText(item);
+
                     return `
-                        <div class="cardText cardTextCentered cardText-first"><bdi><span title="${safeName}">${safeName}</span></bdi></div>
-                        <div class="cardText cardTextCentered cardText-secondary"><bdi><span title="${meta.year}">${meta.yearText}</span></bdi></div>`;
+                        <div class="cardText cardTextCentered cardText-first">
+                            <bdi><span title="${safeName}">${safeName}</span></bdi>
+                        </div>
+                        <div class="cardText cardTextCentered cardText-secondary">
+                            <bdi><span title="${meta.year}">${meta.yearText}</span></bdi>
+                        </div>
+                    `;
                 })() : '';
-                const selected = letterboxdSlot && typeof options.getLetterboxdSelected === 'function'
-                    ? options.getLetterboxdSelected(parseInt(mediaId, 10))
-                    : false;
-                const letterboxdClass = letterboxdSlot
-                    ? ` seerrfin-letterboxd-card${selected ? ' is-selected' : ''}`
-                    : '';
-                const ariaSelected = letterboxdSlot
-                    ? ` aria-selected="${selected ? 'true' : 'false'}"`
-                    : '';
+                const selected = letterboxdSlot && typeof options.getLetterboxdSelected === 'function' ?
+                    options.getLetterboxdSelected(parseInt(mediaId, 10)) :
+                    false;
+                const letterboxdClass = letterboxdSlot ?
+                    ` seerrfin-letterboxd-card${selected ? ' is-selected' : ''}` :
+                    '';
+                const ariaSelected = letterboxdSlot ?
+                    ` aria-selected="${selected ? 'true' : 'false'}"` :
+                    '';
                 const chromeHtml = letterboxdSlot ? self.renderLetterboxdCardChrome() : '';
 
                 const cardHtml = `
@@ -2403,7 +2376,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                             </div>
                             ${metaHtml}
                         </div>
-                    </div>`;
+                    </div>
+                `;
 
                 return self.wrapDiscoverCard(cardHtml, options);
             }).join('');
@@ -2423,10 +2397,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 const mediaId = self.getProviderId(item, 'Tmdb') ||
                     self.getProviderId(item, 'Jellyseerr') ||
                     self.getField(item, 'id', 'Id');
-                const mediaType = self.normalizeDiscoverMediaType(
-                    self.getField(item, 'SourceType', 'sourceType', 'mediaType', 'MediaType')
-                );
+                const mediaType = self.normalizeDiscoverMediaType(self.getField(item, 'SourceType', 'sourceType', 'mediaType', 'MediaType'));
                 const safeName = self.escapeHtml(self.getField(item, 'Name', 'name', 'OriginalTitle', 'originalTitle') || 'Unknown');
+
                 if (!mediaId || !mediaType) {
                     return;
                 }
@@ -2446,16 +2419,23 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                                 <span class="material-icons cardOverlayButtonIcon cardOverlayButtonIcon-hover add" aria-hidden="true"></span>
                             </button>
                         </div>
-                    </div>` : '';
+                    </div>
+                ` : '';
                 const metaHtml = includeMetaText ? (function () {
                     const meta = self.buildDiscoverYearText(item);
+
                     return `
-                        <div class="cardText cardTextCentered cardText-first seerrfin-discover-title-below"><bdi><span title="${safeName}">${safeName}</span></bdi></div>
-                        <div class="cardText cardTextCentered cardText-secondary"><bdi><span title="${meta.year}">${meta.yearText}</span></bdi></div>`;
+                        <div class="cardText cardTextCentered cardText-first seerrfin-discover-title-below">
+                            <bdi><span title="${safeName}">${safeName}</span></bdi>
+                        </div>
+                        <div class="cardText cardTextCentered cardText-secondary">
+                            <bdi><span title="${meta.year}">${meta.yearText}</span></bdi>
+                        </div>
+                    `;
                 })() : '';
-                const selected = letterboxdSlot && typeof options.getLetterboxdSelected === 'function'
-                    ? options.getLetterboxdSelected(parseInt(mediaId, 10))
-                    : false;
+                const selected = letterboxdSlot && typeof options.getLetterboxdSelected === 'function' ?
+                    options.getLetterboxdSelected(parseInt(mediaId, 10)) :
+                    false;
                 const letterboxdClass = letterboxdSlot ? ` seerrfin-letterboxd-card${selected ? ' is-selected' : ''}` : '';
                 const ariaSelected = letterboxdSlot ? ` aria-selected="${selected ? 'true' : 'false'}"` : '';
                 const chromeHtml = letterboxdSlot ? self.renderLetterboxdCardChrome() : '';
@@ -2474,48 +2454,37 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                             </div>
                             ${metaHtml}
                         </div>
-                    </div>`;
+                    </div>
+                `;
 
                 return self.wrapDiscoverCard(cardHtml, options);
             }).join('');
         },
 
         setDiscoverBackdropImage: function (card, cachedUrl) {
-            if (!card) {
-                return;
-            }
+            if (!card) { return; }
 
             const media = card.querySelector('.seerrfin-discover-backdrop-media');
-            if (!media) {
-                return;
-            }
+
+            if (!media) { return; }
 
             const path = card.getAttribute('data-tmdb-backdrop-path') || '';
             const style = this.getDisplayStyle('discoverBackdrop');
-            let displayUrl = style.duotoneEnabled && path
-                ? (this.buildTmdbImageUrl(path, 'discoverBackdrop') || '')
-                : '';
+            let displayUrl = style.duotoneEnabled && path ? (this.buildTmdbImageUrl(path, 'discoverBackdrop') || '') : '';
 
             if (!displayUrl) {
                 displayUrl = cachedUrl || '';
             }
 
-            if (!displayUrl) {
-                return;
-            }
+            if (!displayUrl) { return; }
 
             media.style.backgroundImage = "url('" + displayUrl.replace(/'/g, "\\'") + "')";
         },
 
         setDiscoverBackdropPresentation: function (card, mode) {
-            if (!card) {
-                return;
-            }
+            if (!card) { return; }
 
-            card.classList.remove(
-                'seerrfin-discover-card--english',
-                'seerrfin-discover-card--fallback'
-            );
+            card.classList.remove('seerrfin-discover-card--english', 'seerrfin-discover-card--fallback');
 
             if (mode === 'english') {
                 card.classList.add('seerrfin-discover-card--english');
@@ -2542,12 +2511,14 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             const existing = this._backdropResultCache[cacheKey];
+
             if (!existing || !existing.url) {
                 this._backdropResultCache[cacheKey] = incoming;
                 return;
             }
 
             const preferOriginal = (((this._advancedSettings || {}).tmdb || {}).preferOriginalLanguageImages === true);
+
             if (preferOriginal) {
                 this._backdropResultCache[cacheKey] = incoming;
                 return;
@@ -2559,9 +2530,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         normalizeBackdropBatchItem: function (item) {
-            if (!item) {
-                return null;
-            }
+            if (!item) { return null; }
 
             const mediaType = String(item.mediaType || item.MediaType || '').toLowerCase();
             const tmdbId = parseInt(item.tmdbId || item.TmdbId || '0', 10);
@@ -2580,6 +2549,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         fetchTmdbBackdropBatch: function (items) {
             const self = this;
+
             if (!items || !items.length) {
                 return Promise.resolve(self._backdropResultCache || {});
             }
@@ -2594,39 +2564,31 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             items.forEach(function (item) {
                 const mediaType = String(item.mediaType || '').toLowerCase();
                 const tmdbId = parseInt(item.tmdbId || '0', 10);
+
                 if (!mediaType || !tmdbId) {
                     return;
                 }
 
                 const cacheKey = self.getBackdropCacheKey(mediaType, tmdbId);
-                if (unique[cacheKey]) {
-                    return;
-                }
+
+                if (unique[cacheKey]) { return; }
 
                 unique[cacheKey] = true;
+
                 if (!self._backdropResultCache[cacheKey]) {
-                    uncached.push({
-                        mediaType: mediaType,
-                        tmdbId: tmdbId
-                    });
+                    uncached.push({ mediaType: mediaType, tmdbId: tmdbId });
                 }
             });
 
-            if (!uncached.length) {
-                return Promise.resolve(self._backdropResultCache);
-            }
+            if (!uncached.length) { return Promise.resolve(self._backdropResultCache); }
 
             if (!self._backdropBatchInflight) {
                 self._backdropBatchInflight = {};
             }
 
-            const batchKey = uncached.map(function (item) {
-                return item.mediaType + ':' + item.tmdbId;
-            }).sort().join('|');
+            const batchKey = uncached.map(function (item) { return item.mediaType + ':' + item.tmdbId; }).sort().join('|');
 
-            if (self._backdropBatchInflight[batchKey]) {
-                return self._backdropBatchInflight[batchKey];
-            }
+            if (self._backdropBatchInflight[batchKey]) { return self._backdropBatchInflight[batchKey]; }
 
             const promise = ApiClient.ajax({
                 url: ApiClient.getUrl('SeerrFin/backdrops'),
@@ -2636,8 +2598,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 data: JSON.stringify({ items: uncached })
             }).then(function (data) {
                 const results = data && (data.items || data.Items || []);
+
                 (results || []).forEach(function (item) {
                     const normalized = self.normalizeBackdropBatchItem(item);
+
                     if (!normalized || !normalized.tmdbId) {
                         return;
                     }
@@ -2645,15 +2609,15 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     const cacheKey = self.getBackdropCacheKey(normalized.mediaType, normalized.tmdbId);
                     self.cacheBackdropResult(cacheKey, normalized);
                 });
+
                 return self._backdropResultCache;
             }).catch(function (err) {
                 log.warn('backdrop batch fetch failed', err);
                 return self._backdropResultCache;
-            }).finally(function () {
-                delete self._backdropBatchInflight[batchKey];
-            });
+            }).finally(function () { delete self._backdropBatchInflight[batchKey]; });
 
             self._backdropBatchInflight[batchKey] = promise;
+
             return promise;
         },
 
@@ -2674,11 +2638,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             // Dont downgrade a card that already resolved to English backdrop.
-            if (alreadyEnglish) {
-                return;
-            }
+            if (alreadyEnglish) { return; }
 
             const fallbackUrl = url || seerrFallbackUrl;
+
             if (fallbackUrl || card.getAttribute('data-tmdb-backdrop-path')) {
                 self.setDiscoverBackdropPresentation(card, 'fallback');
                 self.setDiscoverBackdropImage(card, fallbackUrl);
@@ -2687,14 +2650,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         hydrateDiscoverBackdropCards: function (container) {
             const self = this;
-            if (!container) {
-                return;
-            }
+
+            if (!container) { return; }
 
             const cards = container.querySelectorAll('.seerrfin-discover-card--backdrop:not([data-backdrop-hydrate-queued]):not([data-backdrop-loaded])');
-            if (!cards.length) {
-                return;
-            }
+
+            if (!cards.length) { return; }
 
             if (!self._backdropResultCache) {
                 self._backdropResultCache = {};
@@ -2705,7 +2666,6 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             cards.forEach(function (card) {
                 card.dataset.backdropHydrateQueued = 'true';
-
                 const seerrFallback = card.getAttribute('data-fallback-src') || '';
                 const mediaId = card.dataset.tmdbId;
                 const mediaType = card.dataset.mediaType;
@@ -2723,24 +2683,15 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     return;
                 }
 
-                batchItems.push({
-                    mediaType: mediaType,
-                    tmdbId: parseInt(mediaId, 10)
-                });
-                cardEntries.push({
-                    card: card,
-                    seerrFallback: seerrFallback,
-                    mediaType: mediaType,
-                    mediaId: mediaId
-                });
+                batchItems.push({ mediaType: mediaType, tmdbId: parseInt(mediaId, 10) });
+                cardEntries.push({ card: card, seerrFallback: seerrFallback, mediaType: mediaType, mediaId: mediaId });
             });
 
-            if (!cardEntries.length) {
-                return;
-            }
+            if (!cardEntries.length) { return; }
 
             self.fetchTmdbBackdropBatch(batchItems).then(function () {
                 let retryPending = false;
+
                 cardEntries.forEach(function (entry) {
                     const cacheKey = self.getBackdropCacheKey(entry.mediaType, entry.mediaId);
                     const result = self._backdropResultCache[cacheKey] || null;
@@ -2763,29 +2714,28 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     }
 
                     const attempts = (parseInt(entry.card.dataset.backdropAttempts || '0', 10) || 0) + 1;
+
                     if (attempts >= 3) {
                         entry.card.dataset.backdropLoaded = 'true';
                         return;
                     }
+
                     entry.card.dataset.backdropAttempts = String(attempts);
                     delete entry.card.dataset.backdropHydrateQueued;
                     retryPending = true;
                 });
 
                 if (retryPending && container.isConnected) {
-                    setTimeout(function () {
-                        self.hydrateDiscoverBackdropCards(container);
-                    }, 2000);
+                    setTimeout(function () { self.hydrateDiscoverBackdropCards(container); }, 2000);
                 }
             });
         },
 
         clearCardThumbSkeleton: function (root) {
-            if (!root) {
-                return;
-            }
+            if (!root) { return; }
 
             const card = root.closest ? (root.closest('.card') || root) : root;
+
             if (!card || !card.querySelectorAll) {
                 return;
             }
@@ -2795,15 +2745,15 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     skeleton.classList.remove('seerrfin-card-thumb-skeleton');
                     return;
                 }
+
                 skeleton.remove();
             });
         },
 
         setNativeBackdropImage: function (card, url, fallbackUrl) {
             const self = this;
-            if (!card) {
-                return;
-            }
+
+            if (!card) { return; }
 
             if (!url) {
                 self.clearCardThumbSkeleton(card);
@@ -2811,6 +2761,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             const image = card.querySelector('.cardImageContainer.cardContent');
+
             if (!image) {
                 self.clearCardThumbSkeleton(card);
                 return;
@@ -2829,8 +2780,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 image.style.backgroundImage = "url('" + loadedUrl.replace(/'/g, "\\'") + "')";
                 image.classList.add('lazy-image-fadein-fast');
                 image.classList.remove('lazy-hidden');
-
                 const canvas = card.querySelector('.blurhash-canvas');
+
                 if (canvas) {
                     canvas.classList.add('lazy-hidden');
                 }
@@ -2840,13 +2791,14 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         self.clearCardThumbSkeleton(card);
                     }
                 };
+
                 image.addEventListener('animationend', function onEnd() {
                     clearSkeleton();
                     image.removeEventListener('animationend', onEnd);
                 });
                 setTimeout(clearSkeleton, 200);
-
                 const padder = card.querySelector('.cardPadder');
+
                 if (padder) {
                     padder.classList.add('lazy-hidden-children');
                 }
@@ -2875,9 +2827,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         applyNativeBackdropResult: function (card, result) {
-            if (!card) {
-                return;
-            }
+            if (!card) { return; }
 
             if (result && result.path) {
                 card.setAttribute('data-tmdb-backdrop-path', result.path);
@@ -2898,30 +2848,25 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 return;
             }
 
-            if (card.dataset.nativeBackdropEnglish === 'true') {
-                return;
-            }
+            if (card.dataset.nativeBackdropEnglish === 'true') { return; }
 
             this.setNativeBackdropImage(card, fallbackUrl);
         },
 
         hydrateNativeBackdropCards: function (container) {
             const self = this;
-            if (!container) {
-                return;
-            }
+
+            if (!container) { return; }
 
             const cards = container.querySelectorAll('[data-seerrfin-native-card="true"]:not([data-native-backdrop-hydrate-queued]):not([data-native-backdrop-loaded])');
-            if (!cards.length) {
-                return;
-            }
+
+            if (!cards.length) { return; }
 
             const batchItems = [];
             const cardEntries = [];
 
             cards.forEach(function (card) {
                 card.dataset.nativeBackdropHydrateQueued = 'true';
-
                 const mediaId = card.dataset.tmdbId;
                 const mediaType = card.dataset.mediaType;
                 const cacheKey = mediaType && mediaId ? self.getBackdropCacheKey(mediaType, mediaId) : '';
@@ -2939,31 +2884,23 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     return;
                 }
 
-                batchItems.push({
-                    mediaType: mediaType,
-                    tmdbId: parseInt(mediaId, 10)
-                });
-                cardEntries.push({
-                    card: card,
-                    mediaType: mediaType,
-                    mediaId: mediaId
-                });
+                batchItems.push({ mediaType: mediaType, tmdbId: parseInt(mediaId, 10) });
+                cardEntries.push({ card: card, mediaType: mediaType, mediaId: mediaId });
             });
 
-            if (!cardEntries.length) {
-                return;
-            }
+            if (!cardEntries.length) { return; }
 
             self.fetchTmdbBackdropBatch(batchItems).then(function () {
                 cardEntries.forEach(function (entry) {
                     const cacheKey = self.getBackdropCacheKey(entry.mediaType, entry.mediaId);
                     const result = self._backdropResultCache && self._backdropResultCache[cacheKey] || null;
                     self.applyNativeBackdropResult(entry.card, result);
-
                     const hasUrl = !!(result && result.url) || !!entry.card.getAttribute('data-fallback-src');
+
                     if (!hasUrl) {
                         self.clearCardThumbSkeleton(entry.card);
                     }
+
                     entry.card.dataset.nativeBackdropLoaded = 'true';
                 });
             });
@@ -2973,6 +2910,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             // Capturing runs before card navigation handlers
             document.addEventListener('click', function (e) {
                 const btn = e.target.closest('.discover-requestbutton');
+
                 if (!btn || !btn.closest('.seerrfin-movies-sections, .seerrfin-tv-sections, .seerrfin-discover-sections, [data-seerrfin-grid-view], .seerrfin-search-section')) {
                     return;
                 }
@@ -2980,9 +2918,9 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
-
                 const mediaId = btn.getAttribute('data-id');
                 const mediaType = btn.getAttribute('data-media-type');
+
                 if (window.seerrFinModal && window.seerrFinModal.openQualityPicker) {
                     window.seerrFinModal.openQualityPicker(mediaId, mediaType);
                 }
@@ -2992,11 +2930,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         bindCardClickHandler: function () {
             // Capturing so card opens our modal instead of jellyfin detail page
             document.addEventListener('click', function (e) {
-                if (e.target.closest('.discover-requestbutton')) {
-                    return;
-                }
+                if (e.target.closest('.discover-requestbutton')) { return; }
 
                 const card = e.target.closest('.seerrfin-discover-card, [data-seerrfin-native-card="true"]');
+
                 if (!card || card.classList.contains('seerrfin-discover-card--static') ||
                     !card.closest('.seerrfin-movies-sections, .seerrfin-tv-sections, .seerrfin-discover-sections, [data-seerrfin-grid-view], .seerrfin-search-section')) {
                     return;
@@ -3004,6 +2941,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
                 const mediaId = card.dataset.tmdbId;
                 const mediaType = card.dataset.mediaType;
+
                 if (!mediaId || !mediaType) {
                     return;
                 }
@@ -3030,42 +2968,41 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             document.addEventListener('click', function (e) {
                 const btn = e.target.closest('.seerrfin-view-more');
+
                 if (btn) {
                     const container = btn.closest('.seerrfin-movies-sections, .seerrfin-tv-sections, .seerrfin-discover-sections');
-                    if (!container) {
-                        return;
-                    }
+
+                    if (!container) { return; }
 
                     e.preventDefault();
                     e.stopPropagation();
-
                     const path = btn.getAttribute('data-path');
                     const title = btn.getAttribute('data-title');
+
                     if (path && title) {
                         self.openGridView(container, title, path);
                     }
+
                     return;
                 }
 
                 const boxCard = e.target.closest('[data-seerrfin-box-card="true"]');
-                if (!boxCard) {
-                    return;
-                }
+
+                if (!boxCard) { return; }
 
                 const boxContainer = boxCard.closest('.seerrfin-movies-sections, .seerrfin-tv-sections, .seerrfin-discover-sections');
-                if (!boxContainer) {
-                    return;
-                }
+
+                if (!boxContainer) { return; }
 
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
-
                 const kind = boxCard.getAttribute('data-kind');
                 const mediaType = boxCard.getAttribute('data-media-type');
                 const id = boxCard.getAttribute('data-id');
                 const name = boxCard.getAttribute('data-name');
                 const browsePath = self.buildBrowseGridPath(kind, mediaType, id);
+
                 if (browsePath && name) {
                     self.openGridView(boxContainer, name, browsePath);
                 }
@@ -3074,6 +3011,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         clearJellyfinSelection: function () {
             const closeBtn = document.querySelector('.btnCloseSelectionPanel');
+
             if (closeBtn) {
                 closeBtn.click();
                 return;
@@ -3081,6 +3019,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
             document.querySelectorAll('.itemSelectionPanel').forEach(function (panel) {
                 const parent = panel.parentNode;
+
                 if (parent) {
                     parent.removeChild(panel);
                     parent.classList.remove('withMultiSelect');
@@ -3110,13 +3049,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                         <button type="button" class="raised emby-button">Load more</button>
                     </div>
                     <div data-seerrfin-status style="display:none" class="seerrfin-grid-status"></div>
-                </div>`;
+                </div>
+            `;
         },
 
         renderGridViewShell: function (useNativeGrid) {
-            return useNativeGrid
-                ? window.seerrFinNativeUi.renderGridViewShell()
-                : this.renderLegacyGridViewShell();
+            return useNativeGrid ? window.seerrFinNativeUi.renderGridViewShell() : this.renderLegacyGridViewShell();
         },
 
         applyGridViewMode: function (gridView) {
@@ -3128,6 +3066,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             cards.forEach(function (card) {
                 const image = card.querySelector('.cardImageContainer.cardContent');
                 const padder = card.querySelector('.cardPadder');
+
                 if (!image || !padder) {
                     return;
                 }
@@ -3142,19 +3081,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 );
                 padder.classList.add(usePoster ? 'cardPadder-portrait' : 'cardPadder-backdrop');
                 image.classList.add('coveredImage');
-
                 const cardBox = card.querySelector('.cardBox');
+
                 if (cardBox) {
                     cardBox.classList.add('cardBox-bottompadded');
                 }
 
-                card.querySelectorAll('.cardText').forEach(function (textEl) {
-                    textEl.classList.toggle('hide', !showCardText);
-                });
+                card.querySelectorAll('.cardText').forEach(function (textEl) { textEl.classList.toggle('hide', !showCardText); });
+                const nextUrl = usePoster ?
+                    (card.getAttribute('data-poster-src') || card.getAttribute('data-fallback-src') || '') :
+                    (card.getAttribute('data-native-backdrop-src') || card.getAttribute('data-fallback-src') || '');
 
-                const nextUrl = usePoster
-                    ? (card.getAttribute('data-poster-src') || card.getAttribute('data-fallback-src') || '')
-                    : (card.getAttribute('data-native-backdrop-src') || card.getAttribute('data-fallback-src') || '');
                 if (nextUrl) {
                     image.style.backgroundImage = "url('" + nextUrl.replace(/'/g, "\\'") + "')";
                     image.removeAttribute('data-src');
@@ -3165,15 +3102,15 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         applyGridSort: function (gridView) {
             const itemsContainer = gridView.querySelector('.itemsContainer');
-            if (!itemsContainer) {
-                return;
-            }
+
+            if (!itemsContainer) { return; }
 
             const sort = gridView.dataset.gridSort || 'title';
             const sortOrder = gridView.dataset.gridSortOrder || (sort === 'title' ? 'Ascending' : 'Descending');
             const cards = Array.from(itemsContainer.querySelectorAll('.card'));
             cards.sort(function (a, b) {
                 let result;
+
                 if (sort === 'year') {
                     result = (parseInt(b.dataset.year || '0', 10) || 0) - (parseInt(a.dataset.year || '0', 10) || 0);
                 } else if (sort === 'rating') {
@@ -3181,14 +3118,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 } else {
                     result = (a.dataset.name || '').localeCompare(b.dataset.name || '');
                 }
-                if (sort === 'title') {
-                    return sortOrder === 'Descending' ? -result : result;
-                }
+
+                if (sort === 'title') { return sortOrder === 'Descending' ? -result : result; }
+
                 return sortOrder === 'Ascending' ? -result : result;
             });
-            cards.forEach(function (card) {
-                itemsContainer.appendChild(card);
-            });
+            cards.forEach(function (card) { itemsContainer.appendChild(card); });
         },
 
         applyGridPresentation: function (gridView) {
@@ -3210,19 +3145,18 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const useNativeGrid = self.shouldUseNativeGridPages();
             const shellMode = useNativeGrid ? 'native' : 'legacy';
             let gridView = container.querySelector('[data-seerrfin-grid-view]');
+
             if (gridView && gridView.dataset.gridShell !== shellMode) {
                 gridView.remove();
                 gridView = null;
             }
+
             if (!gridView) {
                 gridView = self.mountFromHtml(self.renderGridViewShell(useNativeGrid));
                 gridView.dataset.gridShell = shellMode;
                 container.appendChild(gridView);
-
                 gridView.querySelectorAll('[data-grid-nav="back"]').forEach(function (button) {
-                    button.addEventListener('click', function () {
-                        self.closeGridView(container);
-                    });
+                    button.addEventListener('click', function () { self.closeGridView(container); });
                 });
                 gridView.querySelector('[data-seerrfin-loadmore] button').addEventListener('click', function () {
                     self.loadMoreGridItems(gridView);
@@ -3244,13 +3178,16 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             gridView.dataset.gridSortBy = 'SortName';
             delete gridView.dataset.gridSortOrder;
             const gridTitle = gridView.querySelector('.sectionTitle');
+
             if (gridTitle) {
                 gridTitle.textContent = title;
             }
+
             gridView.querySelector('.itemsContainer').innerHTML = '';
             gridView.querySelector('[data-seerrfin-loadmore]').style.display = 'none';
             gridView.querySelector('[data-seerrfin-status]').style.display = 'none';
             gridView.style.display = '';
+
             if (useNativeGrid) {
                 window.seerrFinNativeUi.setGridControlsEnabled(gridView, false);
                 window.seerrFinNativeUi.updateGridChrome(gridView);
@@ -3261,8 +3198,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         closeGridView: function (container) {
             this.clearJellyfinSelection();
-
             const gridView = container.querySelector('[data-seerrfin-grid-view]');
+
             if (gridView) {
                 gridView.dataset.gridSessionId = 'closed-' + Date.now() + '-' + Math.random().toString(16).slice(2);
                 gridView.dataset.loading = 'false';
@@ -3290,11 +3227,10 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const useNativeCards = gridView.dataset.nativeCards === 'true';
             const gridSessionId = gridView.dataset.gridSessionId || '';
 
-            if (gridView.dataset.loading === 'true') {
-                return;
-            }
+            if (gridView.dataset.loading === 'true') { return; }
 
             gridView.dataset.loading = 'true';
+
             if (isInitial) {
                 status.textContent = 'Loading...';
                 status.style.display = '';
@@ -3314,10 +3250,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 if (!result.items.length && loadedCount === 0) {
                     itemsContainer.innerHTML = `<div class="seerrfin-empty-row">No items to show</div>`;
                     loadMore.style.display = 'none';
+
                     if (useNativeCards) {
                         window.seerrFinNativeUi.setGridControlsEnabled(gridView, false);
                         window.seerrFinNativeUi.updateGridChrome(gridView);
                     }
+
                     return;
                 }
 
@@ -3325,6 +3263,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 itemsContainer.querySelectorAll('[data-tmdb-id]').forEach(function (card) {
                     existingIds.add(card.getAttribute('data-tmdb-id'));
                 });
+
                 const newItems = result.items.filter(function (item) {
                     const id = String(self.getProviderId(item, 'Tmdb') ||
                         self.getProviderId(item, 'Jellyseerr') ||
@@ -3332,14 +3271,12 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     return id && !existingIds.has(id) && existingIds.add(id);
                 });
 
-                itemsContainer.insertAdjacentHTML('beforeend', self.createDiscoverCards(newItems, true, {
-                    nativeCards: useNativeCards
-                }));
+                itemsContainer.insertAdjacentHTML('beforeend', self.createDiscoverCards(newItems, true, { nativeCards: useNativeCards }));
                 self.initNativeOrCustomCards(itemsContainer, useNativeCards);
                 const newCount = loadedCount + result.items.length;
                 gridView.dataset.loadedCount = String(newCount);
-
                 const total = parseInt(result.total || gridView.dataset.total || '0', 10);
+
                 if (total > 0) {
                     gridView.dataset.total = String(total);
                 }
@@ -3349,6 +3286,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 loadMore.style.display = hasMore ? '' : 'none';
                 loadMoreBtn.textContent = 'Load more';
                 loadMoreBtn.disabled = false;
+
                 if (useNativeCards) {
                     self.applyGridPresentation(gridView);
                     window.seerrFinNativeUi.setGridControlsEnabled(gridView, newCount > 0);
@@ -3364,9 +3302,11 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 loadMoreBtn.textContent = 'Load more';
                 loadMoreBtn.disabled = false;
                 log.error('grid load failed for ' + path, err);
+
                 if (loadedCount === 0) {
                     itemsContainer.innerHTML = `<div class="seerrfin-empty-row">Failed to load items.</div>`;
                 }
+
                 if (useNativeCards) {
                     window.seerrFinNativeUi.updateGridChrome(gridView);
                 }
@@ -3374,9 +3314,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         },
 
         setupSearchIntegration: function () {
-            if (this._searchIntegrationBound) {
-                return;
-            }
+            if (this._searchIntegrationBound) { return; }
 
             this._searchIntegrationBound = true;
             const self = this;
@@ -3406,26 +3344,22 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         findSearchPage: function () {
             const pages = document.querySelectorAll('#searchPage');
+
             for (let i = pages.length - 1; i >= 0; i--) {
-                if (this.isContainerVisible(pages[i])) {
-                    return pages[i];
-                }
+                if (this.isContainerVisible(pages[i])) { return pages[i]; }
             }
+
             return null;
         },
 
         findSearchInput: function (searchPage) {
-            if (!searchPage) {
-                return null;
-            }
+            if (!searchPage) { return null; }
 
             return searchPage.querySelector('#searchTextInput, input[type="search"], input.searchfields-txt');
         },
 
         findSearchResultsContainer: function (searchPage) {
-            if (!searchPage) {
-                return null;
-            }
+            if (!searchPage) { return null; }
 
             // Match Jellyfin's results area, not the search input fields container.
             return searchPage.querySelector('.searchResults.padded-top.padded-bottom-page') ||
@@ -3435,12 +3369,14 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         insertSearchSection: function (searchPage, section) {
             const resultsContainer = this.findSearchResultsContainer(searchPage);
+
             if (resultsContainer) {
                 resultsContainer.appendChild(section);
                 return true;
             }
 
             const noResultsMessage = searchPage.querySelector('.noItemsMessage');
+
             if (noResultsMessage && noResultsMessage.parentNode) {
                 noResultsMessage.parentNode.insertBefore(section, noResultsMessage.nextSibling);
                 return true;
@@ -3453,14 +3389,13 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             const self = this;
             const searchPage = self.findSearchPage();
             const input = self.findSearchInput(searchPage);
+
             if (!input || input.dataset.seerrfinSearchListener === 'true') {
                 return;
             }
 
             input.dataset.seerrfinSearchListener = 'true';
-            input.addEventListener('input', function () {
-                self.handleJellyfinSearchPage();
-            });
+            input.addEventListener('input', function () { self.handleJellyfinSearchPage(); });
         },
 
         handleJellyfinSearchPage: function () {
@@ -3474,26 +3409,21 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 self._lastSearchQuery = null;
                 self._lastSearchItems = null;
                 self._activeSearchToken = null;
+
                 return;
             }
 
             clearTimeout(self._searchDebounceTimer);
-            self._searchDebounceTimer = setTimeout(function () {
-                self.runJellyfinSearch(query);
-            }, 300);
+            self._searchDebounceTimer = setTimeout(function () { self.runJellyfinSearch(query); }, 300);
         },
 
         removeSearchSection: function () {
-            document.querySelectorAll('.seerrfin-search-section').forEach(function (section) {
-                section.remove();
-            });
+            document.querySelectorAll('.seerrfin-search-section').forEach(function (section) { section.remove(); });
         },
 
         showSearchSkeleton: function (searchPage) {
             this.removeSearchSection();
-            const skeleton = this.buildRowSkeleton('Seerr results', 'poster', {
-                native: this.shouldUseNativeSearchResults()
-            });
+            const skeleton = this.buildRowSkeleton('Seerr results', 'poster', { native: this.shouldUseNativeSearchResults() });
             skeleton.classList.add('seerrfin-search-section');
             this.insertSearchSection(searchPage, skeleton);
         },
@@ -3503,45 +3433,35 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 '?query=' + encodeURIComponent(query) +
                 '&_=' + Date.now();
 
-            return ApiClient.ajax({
-                url: url,
-                type: 'GET',
-                dataType: 'json',
-                cache: false
-            }).then(function (data) {
+            return ApiClient.ajax({ url: url, type: 'GET', dataType: 'json', cache: false }).then(function (data) {
                 const items = data && (data.Items || data.items || data.Results || data.results);
                 const total = data && (data.TotalRecordCount ?? data.totalRecordCount ?? 0);
-                return {
-                    items: Array.isArray(items) ? items : [],
-                    total: total
-                };
+                return { items: Array.isArray(items) ? items : [], total: total };
             });
         },
 
         getSearchItemMediaRefs: function (item) {
-            const mediaType = this.normalizeDiscoverMediaType(
-                this.getField(item, 'SourceType', 'sourceType', 'mediaType', 'MediaType')
-            );
+            const mediaType = this.normalizeDiscoverMediaType(this.getField(item, 'SourceType', 'sourceType', 'mediaType', 'MediaType'));
             const tmdbId = parseInt(this.getProviderId(item, 'Tmdb') || '0', 10);
-            return {
-                mediaType: mediaType,
-                tmdbId: tmdbId
-            };
+            return { mediaType: mediaType, tmdbId: tmdbId };
         },
 
         runJellyfinSearch: function (query) {
             const self = this;
             const searchPage = self.findSearchPage();
             const input = self.findSearchInput(searchPage);
+
             if (!searchPage || !input || input.value.trim() !== query || !self.isSearchSettingEnabled()) {
                 return;
             }
 
             if (self._lastSearchQuery === query) {
                 const existingSection = searchPage.querySelector('.seerrfin-search-section');
+
                 if (!existingSection && Array.isArray(self._lastSearchItems) && self._lastSearchItems.length) {
                     self.renderSearchSection(searchPage, query, self._lastSearchItems);
                 }
+
                 return;
             }
 
@@ -3549,7 +3469,6 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             self._lastSearchItems = null;
             const token = Date.now().toString(36) + Math.random().toString(36).slice(2);
             self._activeSearchToken = token;
-
             self.showSearchSkeleton(searchPage);
 
             self.loadDisplaySettings().then(function () {
@@ -3565,6 +3484,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
                 const currentPage = self.findSearchPage();
                 const currentInput = self.findSearchInput(currentPage);
+
                 if (!currentPage || !currentInput || currentInput.value.trim() !== query) {
                     return;
                 }
@@ -3582,25 +3502,28 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         renderSearchSection: function (searchPage, query, items) {
             this.removeSearchSection();
+
             if (!items || !items.length) {
                 return;
             }
 
             const safeQuery = this.escapeHtml(query);
             const useNativeCards = this.shouldUseNativeSearchResults();
-            const section = useNativeCards
-                ? this.mountFromHtml(`
+            const section = useNativeCards ?
+                this.mountFromHtml(`
                     <div class="verticalSection seerrfin-poster-section seerrfin-search-section seerrfin-section-fadein" data-query="${safeQuery}">
                         <h2 class="sectionTitle sectionTitle-cards focuscontainer-x padded-left padded-right">Seerr results</h2>
                         <div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x animatedScrollX" data-monitor="videoplayback,markplayed"></div>
-                    </div>`)
-                : this.mountFromHtml(`
+                    </div>
+                `) :
+                this.mountFromHtml(`
                     <div class="verticalSection seerrfin-poster-section seerrfin-search-section seerrfin-section-fadein" data-query="${safeQuery}">
                         <div class="sectionTitleContainer sectionTitleContainer-cards padded-left">
                             <h2 class="sectionTitle sectionTitle-cards">Seerr results</h2>
                         </div>
                         <div is="emby-itemscontainer" class="itemsContainer scrollSlider focuscontainer-x"></div>
-                    </div>`);
+                    </div>
+                `);
 
             const itemsContainer = section.querySelector('.itemsContainer');
             itemsContainer.innerHTML = this.createDiscoverCards(items, false, {
@@ -3613,9 +3536,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                 scrollEvent: false
             });
 
-            if (!this.insertSearchSection(searchPage, section)) {
-                return;
-            }
+            if (!this.insertSearchSection(searchPage, section)) { return; }
 
             this.initNativeOrCustomCards(itemsContainer, useNativeCards);
             this.refreshScrollers(section);
@@ -3623,6 +3544,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
 
         refreshScrollers: function (container) {
             const self = this;
+
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
                     const scrollers = container.querySelectorAll('[is="emby-scroller"]');
@@ -3631,32 +3553,24 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                             scroller.scroller.reload();
                         }
                     });
-
-                    container.querySelectorAll('.seerrfin-poster-section').forEach(function (section) {
-                        self.bindRowInfiniteScroll(section);
-                    });
+                    container.querySelectorAll('.seerrfin-poster-section').forEach(function (section) { self.bindRowInfiniteScroll(section); });
                 });
             });
         },
 
         initLazyImages: function (container) {
-            if (!container) {
-                return;
-            }
+            if (!container) { return; }
 
             const self = this;
             const images = container.querySelectorAll('.cardImageContainer.lazy[data-src]');
 
-            if (!images.length) {
-                return;
-            }
+            if (!images.length) { return; }
 
             if (!self._lazyObserver) {
                 self._lazyObserver = new IntersectionObserver(function (entries) {
                     entries.forEach(function (entry) {
-                        if (!entry.isIntersecting) {
-                            return;
-                        }
+                        if (!entry.isIntersecting) { return; }
+
                         self.loadLazyImage(entry.target);
                         self._lazyObserver.unobserve(entry.target);
                     });
@@ -3664,9 +3578,8 @@ if (typeof window.seerrFinPlugin === 'undefined') {
             }
 
             images.forEach(function (img) {
-                if (img.dataset.bstLazyBound === 'true') {
-                    return;
-                }
+                if (img.dataset.bstLazyBound === 'true') { return; }
+
                 img.dataset.bstLazyBound = 'true';
                 self._lazyObserver.observe(img);
             });
@@ -3675,6 +3588,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         loadLazyImage: function (elem) {
             const self = this;
             const url = elem.getAttribute('data-src');
+
             if (!url) {
                 self.clearCardThumbSkeleton(elem);
                 return;
@@ -3689,16 +3603,17 @@ if (typeof window.seerrFinPlugin === 'undefined') {
                     elem.removeAttribute('data-src');
                     elem.classList.add('lazy-image-fadein-fast');
                     elem.classList.remove('lazy-hidden');
-
                     const clearSkeleton = function () {
                         self.clearCardThumbSkeleton(elem);
                     };
 
                     elem.addEventListener('animationend', function onEnd() {
                         const padder = elem.parentNode && elem.parentNode.querySelector('.cardPadder');
+
                         if (padder) {
                             padder.classList.add('lazy-hidden-children');
                         }
+
                         clearSkeleton();
                         elem.removeEventListener('animationend', onEnd);
                     });
@@ -3714,18 +3629,20 @@ if (typeof window.seerrFinPlugin === 'undefined') {
         getField: function (item) {
             for (let i = 1; i < arguments.length; i++) {
                 const key = arguments[i];
+
                 if (item && item[key] !== undefined && item[key] !== null) {
                     return item[key];
                 }
             }
+
             return null;
         },
 
         getProviderId: function (item, key) {
             const providerIds = item && (item.ProviderIds || item.providerIds);
-            if (!providerIds) {
-                return null;
-            }
+
+            if (!providerIds) { return null; }
+
             return providerIds[key] || providerIds[key.toLowerCase()] || null;
         },
 
@@ -3753,9 +3670,7 @@ if (typeof window.seerrFinPlugin === 'undefined') {
     });
     document.addEventListener('visibilitychange', function () {
         if (!document.hidden && window.seerrFinPlugin) {
-            setTimeout(function () {
-                window.seerrFinPlugin.scheduleRender();
-            }, 300);
+            setTimeout(function () { window.seerrFinPlugin.scheduleRender(); }, 300);
         }
     });
 }

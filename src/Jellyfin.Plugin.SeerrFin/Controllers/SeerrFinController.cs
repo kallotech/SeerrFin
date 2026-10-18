@@ -37,7 +37,8 @@ public class SeerrFinController : ControllerBase
         TmdbBackdropService tmdbBackdropService,
         JustWatchQualitiesService justWatchQualitiesService,
         LetterboxdWatchlistService letterboxdWatchlistService,
-        LetterboxdBulkRequestService letterboxdBulkRequestService)
+        LetterboxdBulkRequestService letterboxdBulkRequestService
+    )
     {
         _discoveryService = discoveryService;
         _requestService = requestService;
@@ -52,8 +53,8 @@ public class SeerrFinController : ControllerBase
 
     private Guid GetUserId()
     {
-        string? userIdString = User.Claims
-            .FirstOrDefault(x => x.Type.Equals("Jellyfin-UserId", StringComparison.OrdinalIgnoreCase))?.Value;
+        string? userIdString = User.Claims.FirstOrDefault(x => x.Type.Equals("Jellyfin-UserId", StringComparison.OrdinalIgnoreCase))?.Value;
+
         return string.IsNullOrEmpty(userIdString) ? Guid.Empty : Guid.Parse(userIdString);
     }
 
@@ -71,6 +72,7 @@ public class SeerrFinController : ControllerBase
     private void SetCacheHeaders()
     {
         var config = SeerrFinPlugin.Instance.Configuration;
+
         // Developer mode bypasses browser cache. Production uses configurable ttl
         if (config.DeveloperMode)
         {
@@ -132,8 +134,11 @@ public class SeerrFinController : ControllerBase
 
     [HttpGet("watchlist")]
     [Authorize]
-    public Task<IActionResult> GetWatchlist([FromServices] JellyseerrWatchlistService watchlist, [FromQuery] int page = 1, CancellationToken cancellationToken = default) =>
-        WatchlistOperation(watchlist, HttpMethod.Get, page, null, 0, cancellationToken);
+    public Task<IActionResult> GetWatchlist(
+        [FromServices] JellyseerrWatchlistService watchlist,
+        [FromQuery] int page = 1,
+        CancellationToken cancellationToken = default
+    ) => WatchlistOperation(watchlist, HttpMethod.Get, page, null, 0, cancellationToken);
 
     [HttpGet("seerrfin-account.js")]
     [Produces("application/javascript")]
@@ -153,6 +158,7 @@ public class SeerrFinController : ControllerBase
     {
         Response.Headers.CacheControl = "no-store";
         var result = await account.GetAsync(GetUserId(), cancellationToken).ConfigureAwait(false);
+
         return new ContentResult { StatusCode = result.StatusCode, Content = result.Body, ContentType = "application/json" };
     }
 
@@ -162,65 +168,97 @@ public class SeerrFinController : ControllerBase
 
     [HttpPost("profile")]
     [Authorize]
-    public Task<IActionResult> SaveProfile([FromServices] JellyseerrProfileService profile, [FromBody] System.Text.Json.JsonElement changes, CancellationToken cancellationToken)
+    public Task<IActionResult> SaveProfile(
+        [FromServices] JellyseerrProfileService profile,
+        [FromBody] System.Text.Json.JsonElement changes,
+        CancellationToken cancellationToken
+    )
     {
         Response.Headers.CacheControl = "no-store";
+
         if (changes.ValueKind != System.Text.Json.JsonValueKind.Object || changes.GetRawText().Length > 8192)
             return Task.FromResult<IActionResult>(BadRequest(new { message = "Invalid profile fields." }));
+
         return ProfileOperation(profile, JObject.Parse(changes.GetRawText()), cancellationToken);
     }
 
-    private async Task<IActionResult> ProfileOperation(JellyseerrProfileService profile, JObject? changes, CancellationToken cancellationToken)
+    private async Task<IActionResult> ProfileOperation(
+        JellyseerrProfileService profile,
+        JObject? changes,
+        CancellationToken cancellationToken
+    )
     {
         Response.Headers.CacheControl = "no-store";
         var result = await profile.ExecuteAsync(GetUserId(), changes, cancellationToken).ConfigureAwait(false);
+
         return new ContentResult { StatusCode = result.StatusCode, Content = result.Body, ContentType = "application/json" };
     }
 
     [HttpGet("watchlist/{mediaType}/{tmdbId:int}")]
     [Authorize]
-    public Task<IActionResult> GetWatchlistState(string mediaType, int tmdbId, [FromServices] JellyseerrWatchlistService watchlist, CancellationToken cancellationToken) =>
-        WatchlistOperation(watchlist, HttpMethod.Get, 1, mediaType, tmdbId, cancellationToken);
+    public Task<IActionResult> GetWatchlistState(
+        string mediaType,
+        int tmdbId,
+        [FromServices] JellyseerrWatchlistService watchlist,
+        CancellationToken cancellationToken
+    ) => WatchlistOperation(watchlist, HttpMethod.Get, 1, mediaType, tmdbId, cancellationToken);
 
     [HttpPost("watchlist/{mediaType}/{tmdbId:int}")]
     [Authorize]
-    public Task<IActionResult> AddToWatchlist(string mediaType, int tmdbId, [FromServices] JellyseerrWatchlistService watchlist, CancellationToken cancellationToken) =>
-        WatchlistOperation(watchlist, HttpMethod.Post, 1, mediaType, tmdbId, cancellationToken);
+    public Task<IActionResult> AddToWatchlist(
+        string mediaType,
+        int tmdbId,
+        [FromServices] JellyseerrWatchlistService watchlist,
+        CancellationToken cancellationToken
+    ) => WatchlistOperation(watchlist, HttpMethod.Post, 1, mediaType, tmdbId, cancellationToken);
 
     [HttpDelete("watchlist/{mediaType}/{tmdbId:int}")]
     [Authorize]
-    public Task<IActionResult> RemoveFromWatchlist(string mediaType, int tmdbId, [FromServices] JellyseerrWatchlistService watchlist, CancellationToken cancellationToken) =>
-        WatchlistOperation(watchlist, HttpMethod.Delete, 1, mediaType, tmdbId, cancellationToken);
+    public Task<IActionResult> RemoveFromWatchlist(
+        string mediaType,
+        int tmdbId,
+        [FromServices] JellyseerrWatchlistService watchlist,
+        CancellationToken cancellationToken
+    ) => WatchlistOperation(watchlist, HttpMethod.Delete, 1, mediaType, tmdbId, cancellationToken);
 
-    private async Task<IActionResult> WatchlistOperation(JellyseerrWatchlistService watchlist, HttpMethod method, int page, string? mediaType, int tmdbId, CancellationToken cancellationToken)
+    private async Task<IActionResult> WatchlistOperation(
+        JellyseerrWatchlistService watchlist,
+        HttpMethod method,
+        int page,
+        string? mediaType,
+        int tmdbId,
+        CancellationToken cancellationToken
+    )
     {
         Response.Headers.CacheControl = "no-store";
+
         if (page < 1 || (mediaType != null && (tmdbId <= 0 || (mediaType != "movie" && mediaType != "tv"))))
         {
             return BadRequest(new { message = "Invalid watchlist page or title." });
         }
 
-        var result = await watchlist.SendAsync(GetUserId(), method, page, mediaType, tmdbId, cancellationToken).ConfigureAwait(false);
+        var result = await watchlist
+            .SendAsync(GetUserId(), method, page, mediaType, tmdbId, cancellationToken)
+            .ConfigureAwait(false);
+
         return new ContentResult { StatusCode = result.StatusCode, Content = result.Body, ContentType = "application/json" };
     }
 
     [HttpGet("jellyseerr/{*path}")]
     [Authorize]
-    public Task<IActionResult> JellyseerrProxyGet(
-        string path,
-        [FromServices] IUserManager userManager,
-        CancellationToken cancellationToken) =>
-        ProxyJellyseerr(userManager, HttpMethod.Get, path, null, cancellationToken);
+    public Task<IActionResult> JellyseerrProxyGet(string path, [FromServices] IUserManager userManager, CancellationToken cancellationToken) => ProxyJellyseerr(userManager, HttpMethod.Get, path, null, cancellationToken);
 
     [HttpPost("jellyseerr/{*path}")]
     [Authorize]
     public async Task<IActionResult> JellyseerrProxyPost(
         string path,
         [FromServices] IUserManager userManager,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         using StreamReader reader = new(Request.Body, Encoding.UTF8);
         string body = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+
         return await ProxyJellyseerr(userManager, HttpMethod.Post, path, body, cancellationToken).ConfigureAwait(false);
     }
 
@@ -229,7 +267,8 @@ public class SeerrFinController : ControllerBase
         HttpMethod method,
         string path,
         string? body,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         string? username = GetUsername(userManager);
         if (string.IsNullOrWhiteSpace(username))
@@ -241,12 +280,7 @@ public class SeerrFinController : ControllerBase
             .ProxyAsync(username, method, path, body, cancellationToken)
             .ConfigureAwait(false);
 
-        return new ContentResult
-        {
-            StatusCode = statusCode,
-            Content = responseBody,
-            ContentType = contentType
-        };
+        return new ContentResult { StatusCode = statusCode, Content = responseBody, ContentType = contentType };
     }
 
     [HttpGet("Configuration")]
@@ -260,36 +294,46 @@ public class SeerrFinController : ControllerBase
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
         List<SeerrFinTabConfig> tabs = SeerrFinTabConfigHelper.Normalize(config.Tabs);
         Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
-        return Ok(new
-        {
-            config.StreamingServiceUseImages,
-            config.StudioNetworkUseImages,
-            config.GenreUseBackdrops,
-            config.DiscoverUsePosters,
-            config.ElegantFinFixes,
-            config.QualityRecommendations,
-            config.AddSeerrResultsInSearch,
-            config.NativeCarousels,
-            config.NativeGridPages,
-            config.NativeSearchResults,
-            displayCustomizations = DisplayCustomizationsHelper.Resolve(config),
-            advanced = AdvancedSettingsHelper.BuildFrontendPayload(config),
-            tabs = tabs.Select(tab => new { id = tab.Id, enabled = tab.Enabled, title = tab.Title }),
-            tabBarOrder = SeerrFinTabConfigHelper.NormalizeBarOrder(config.TabBarOrder)
-        });
+
+        return Ok(
+            new
+            {
+                config.StreamingServiceUseImages,
+                config.StudioNetworkUseImages,
+                config.GenreUseBackdrops,
+                config.DiscoverUsePosters,
+                config.ElegantFinFixes,
+                config.QualityRecommendations,
+                config.AddSeerrResultsInSearch,
+                config.NativeCarousels,
+                config.NativeGridPages,
+                config.NativeSearchResults,
+                displayCustomizations = DisplayCustomizationsHelper.Resolve(config),
+                advanced = AdvancedSettingsHelper.BuildFrontendPayload(config),
+                tabs = tabs.Select(tab => new { id = tab.Id, enabled = tab.Enabled, title = tab.Title }),
+                tabBarOrder = SeerrFinTabConfigHelper.NormalizeBarOrder(config.TabBarOrder)
+            }
+        );
     }
 
     [HttpGet("backdrop/{mediaType}/{tmdbId}")]
     [Authorize]
-    public async Task<ActionResult> GetBackdrop(string mediaType, int tmdbId, [FromQuery] bool preferNeutral = false, CancellationToken cancellationToken = default)
+    public async Task<ActionResult> GetBackdrop(
+        string mediaType,
+        int tmdbId,
+        [FromQuery] bool preferNeutral = false,
+        CancellationToken cancellationToken = default
+    )
     {
         if (tmdbId <= 0)
         {
             return NotFound();
         }
 
-        if (!string.Equals(mediaType, "movie", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.Equals(mediaType, "movie", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase)
+        )
         {
             return BadRequest();
         }
@@ -297,18 +341,19 @@ public class SeerrFinController : ControllerBase
         TmdbBackdropService.CachedBackdropDto? backdrop = await _tmdbBackdropService
             .GetCachedBackdropAsync(mediaType, tmdbId, preferNeutral, cancellationToken)
             .ConfigureAwait(false);
-
         if (backdrop == null || string.IsNullOrEmpty(backdrop.BackdropUrl))
         {
             return NotFound();
         }
 
-        return Ok(new
-        {
-            backdropUrl = backdrop.BackdropUrl,
-            tmdbBackdropPath = backdrop.TmdbBackdropPath,
-            hasEnglishBackdrop = backdrop.HasEnglishBackdrop
-        });
+        return Ok(
+            new
+            {
+                backdropUrl = backdrop.BackdropUrl,
+                tmdbBackdropPath = backdrop.TmdbBackdropPath,
+                hasEnglishBackdrop = backdrop.HasEnglishBackdrop
+            }
+        );
     }
 
     [HttpGet("CachedImage/{cacheKey}")]
@@ -333,15 +378,19 @@ public class SeerrFinController : ControllerBase
         Response.Headers.ETag = cachedFile.ETag;
         Response.Headers.LastModified = cachedFile.LastModified.ToString("R");
 
-        if (Request.Headers.TryGetValue("If-None-Match", out Microsoft.Extensions.Primitives.StringValues etagValues)
-            && etagValues.Any(value => string.Equals(value, cachedFile.ETag, StringComparison.Ordinal)))
+        if (
+            Request.Headers.TryGetValue("If-None-Match", out Microsoft.Extensions.Primitives.StringValues etagValues)
+            && etagValues.Any(value => string.Equals(value, cachedFile.ETag, StringComparison.Ordinal))
+        )
         {
             return StatusCode(304);
         }
 
-        if (Request.Headers.TryGetValue("If-Modified-Since", out Microsoft.Extensions.Primitives.StringValues modifiedValues)
+        if (
+            Request.Headers.TryGetValue("If-Modified-Since", out Microsoft.Extensions.Primitives.StringValues modifiedValues)
             && DateTime.TryParse(modifiedValues.FirstOrDefault(), out DateTime ifModifiedSince)
-            && ifModifiedSince.ToUniversalTime() >= cachedFile.LastModified)
+            && ifModifiedSince.ToUniversalTime() >= cachedFile.LastModified
+        )
         {
             return StatusCode(304);
         }
@@ -353,15 +402,15 @@ public class SeerrFinController : ControllerBase
     [Authorize]
     public async Task<ActionResult<BackdropBatchResponseDto>> GetBackdrops(
         [FromBody] BackdropBatchRequestDto request,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (request.Items == null || request.Items.Count == 0)
         {
             return BadRequest();
         }
 
-        List<BackdropBatchItemDto> items = await _tmdbBackdropService
-            .GetCachedBackdropsAsync(request.Items, cancellationToken)
+        List<BackdropBatchItemDto> items = await _tmdbBackdropService.GetCachedBackdropsAsync(request.Items, cancellationToken)
             .ConfigureAwait(false);
 
         return Ok(new BackdropBatchResponseDto { Items = items });
@@ -369,19 +418,31 @@ public class SeerrFinController : ControllerBase
 
     [HttpGet("discover/filtered/{mediaType}")]
     [Authorize]
-    public Task<IActionResult> GetFilteredDiscovery([FromServices] JellyseerrFilterService filters, string mediaType, CancellationToken cancellationToken) =>
-        FilterOperation(filters, mediaType, false, cancellationToken);
+    public Task<IActionResult> GetFilteredDiscovery(
+        [FromServices] JellyseerrFilterService filters,
+        string mediaType,
+        CancellationToken cancellationToken
+    ) => FilterOperation(filters, mediaType, false, cancellationToken);
 
     [HttpGet("discover/filter-options/{mediaType}")]
     [Authorize]
-    public Task<IActionResult> GetDiscoveryFilterOptions([FromServices] JellyseerrFilterService filters, string mediaType, CancellationToken cancellationToken) =>
-        FilterOperation(filters, mediaType, true, cancellationToken);
+    public Task<IActionResult> GetDiscoveryFilterOptions(
+        [FromServices] JellyseerrFilterService filters,
+        string mediaType,
+        CancellationToken cancellationToken
+    ) => FilterOperation(filters, mediaType, true, cancellationToken);
 
-    private async Task<IActionResult> FilterOperation(JellyseerrFilterService filters, string mediaType, bool options, CancellationToken cancellationToken)
+    private async Task<IActionResult> FilterOperation(
+        JellyseerrFilterService filters,
+        string mediaType,
+        bool options,
+        CancellationToken cancellationToken
+    )
     {
         Response.Headers.CacheControl = "no-store";
         var query = Request.Query.ToDictionary(x => x.Key, x => x.Value.ToString());
         var result = await filters.GetAsync(GetUserId(), mediaType, query, options, cancellationToken).ConfigureAwait(false);
+
         return new ContentResult { StatusCode = result.StatusCode, Content = result.Body, ContentType = "application/json" };
     }
 
@@ -398,72 +459,72 @@ public class SeerrFinController : ControllerBase
     public ActionResult<QueryResult<BaseItemDto>> MoviesTrending(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/trending", "movie", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/trending", "movie", startIndex, limit);
 
     [HttpGet("discover/movies/popular")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> MoviesPopular(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/movies?sortBy=popularity.desc", "movie", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/movies?sortBy=popularity.desc", "movie", startIndex, limit);
 
     [HttpGet("discover/movies/top-rated")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> MoviesTopRated(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/movies?sortBy=vote_average.desc&voteCountGte=200", "movie", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/movies?sortBy=vote_average.desc&voteCountGte=200", "movie", startIndex, limit);
 
     [HttpGet("discover/movies/upcoming")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> MoviesUpcoming(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/movies/upcoming", "movie", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/movies/upcoming", "movie", startIndex, limit);
 
     [HttpGet("discover/tv/trending")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> TvTrending(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/trending", "tv", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/trending", "tv", startIndex, limit);
 
     [HttpGet("discover/tv/popular")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> TvPopular(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/tv?sortBy=popularity.desc", "tv", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/tv?sortBy=popularity.desc", "tv", startIndex, limit);
 
     [HttpGet("discover/tv/top-rated")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> TvTopRated(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/tv?sortBy=vote_average.desc&voteCountGte=200", "tv", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/tv?sortBy=vote_average.desc&voteCountGte=200", "tv", startIndex, limit);
 
     [HttpGet("discover/tv/upcoming")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> TvUpcoming(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, "/api/v1/discover/tv/upcoming", "tv", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, "/api/v1/discover/tv/upcoming", "tv", startIndex, limit);
 
     [HttpGet("discover/tv/anime")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> TvAnime(
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        _discoveryService.GetAnimeRow(GetUsername(userManager) ?? string.Empty, startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => _discoveryService.GetAnimeRow(GetUsername(userManager) ?? string.Empty, startIndex, limit);
 
     [HttpGet("discover/movies/genre/{genreId}")]
     [Authorize]
@@ -471,8 +532,8 @@ public class SeerrFinController : ControllerBase
         int genreId,
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, $"/api/v1/discover/movies?genre={genreId}", "movie", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, $"/api/v1/discover/movies?genre={genreId}", "movie", startIndex, limit);
 
     [HttpGet("discover/tv/genre/{genreId}")]
     [Authorize]
@@ -480,8 +541,8 @@ public class SeerrFinController : ControllerBase
         int genreId,
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, $"/api/v1/discover/tv?genre={genreId}", "tv", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, $"/api/v1/discover/tv?genre={genreId}", "tv", startIndex, limit);
 
     [HttpGet("discover/movies/studio/{studioId}")]
     [Authorize]
@@ -489,8 +550,8 @@ public class SeerrFinController : ControllerBase
         int studioId,
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, $"/api/v1/discover/movies?studio={studioId}", "movie", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, $"/api/v1/discover/movies?studio={studioId}", "movie", startIndex, limit);
 
     [HttpGet("discover/tv/network/{networkId}")]
     [Authorize]
@@ -498,8 +559,8 @@ public class SeerrFinController : ControllerBase
         int networkId,
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null) =>
-        DiscoverRow(userManager, $"/api/v1/discover/tv?network={networkId}", "tv", startIndex, limit);
+        [FromQuery] int? limit = null
+    ) => DiscoverRow(userManager, $"/api/v1/discover/tv?network={networkId}", "tv", startIndex, limit);
 
     [HttpGet("discover/movies/provider/{providerId}")]
     [Authorize]
@@ -507,7 +568,8 @@ public class SeerrFinController : ControllerBase
         int providerId,
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null)
+        [FromQuery] int? limit = null
+    )
     {
         return DiscoverRow(userManager, $"/api/v1/discover/movies?watchProviders={providerId}", "movie", startIndex, limit);
     }
@@ -518,7 +580,8 @@ public class SeerrFinController : ControllerBase
         int providerId,
         [FromServices] IUserManager userManager,
         [FromQuery] int startIndex = 0,
-        [FromQuery] int? limit = null)
+        [FromQuery] int? limit = null
+    )
     {
         return DiscoverRow(userManager, $"/api/v1/discover/tv?watchProviders={providerId}", "tv", startIndex, limit);
     }
@@ -528,24 +591,20 @@ public class SeerrFinController : ControllerBase
         string jellyseerrPath,
         string mediaType,
         int startIndex,
-        int? limit) =>
-        _discoveryService.GetDiscoverRow(GetUsername(userManager) ?? string.Empty, jellyseerrPath, mediaType, startIndex, limit);
+        int? limit
+    ) => _discoveryService.GetDiscoverRow(GetUsername(userManager) ?? string.Empty, jellyseerrPath, mediaType, startIndex, limit);
 
     [HttpGet("search")]
     [Authorize]
     public ActionResult<QueryResult<BaseItemDto>> Search(
         [FromServices] IUserManager userManager,
         [FromQuery] string? query,
-        [FromQuery] string? language = null)
+        [FromQuery] string? language = null
+    )
     {
         if (string.IsNullOrWhiteSpace(query))
         {
-            return BadRequest(new
-            {
-                error = true,
-                code = "missing_query",
-                message = "Search query is required."
-            });
+            return BadRequest(new { error = true, code = "missing_query", message = "Search query is required." });
         }
 
         return _discoveryService.Search(GetUsername(userManager) ?? string.Empty, query, language);
@@ -556,6 +615,7 @@ public class SeerrFinController : ControllerBase
     public ActionResult MovieGenres([FromServices] IUserManager userManager)
     {
         JArray data = _discoveryService.GetGenreSlider("movie", GetUsername(userManager) ?? string.Empty);
+
         return Content(data.ToString(), "application/json");
     }
 
@@ -564,6 +624,7 @@ public class SeerrFinController : ControllerBase
     public ActionResult TvGenres([FromServices] IUserManager userManager)
     {
         JArray data = _discoveryService.GetGenreSlider("tv", GetUsername(userManager) ?? string.Empty);
+
         return Content(data.ToString(), "application/json");
     }
 
@@ -572,6 +633,7 @@ public class SeerrFinController : ControllerBase
     public ActionResult MovieProviders()
     {
         JArray data = _discoveryService.GetMovieStreamingServices();
+
         return Content(data.ToString(), "application/json");
     }
 
@@ -580,6 +642,7 @@ public class SeerrFinController : ControllerBase
     public ActionResult TvProviders()
     {
         JArray data = _discoveryService.GetTvStreamingServices();
+
         return Content(data.ToString(), "application/json");
     }
 
@@ -588,6 +651,7 @@ public class SeerrFinController : ControllerBase
     public ActionResult MovieStudios()
     {
         JArray data = _discoveryService.GetStudios();
+
         return Content(data.ToString(), "application/json");
     }
 
@@ -596,6 +660,7 @@ public class SeerrFinController : ControllerBase
     public ActionResult TvNetworks()
     {
         JArray data = _discoveryService.GetNetworks();
+
         return Content(data.ToString(), "application/json");
     }
 
@@ -611,16 +676,16 @@ public class SeerrFinController : ControllerBase
             browseUrl = config.JellyseerrUrl?.Trim();
         }
 
-        return Ok(new
-        {
-            tmdbApiKey = key ?? string.Empty,
-            jellyseerrBrowseUrl = browseUrl ?? string.Empty
-        });
+        return Ok(new { tmdbApiKey = key ?? string.Empty, jellyseerrBrowseUrl = browseUrl ?? string.Empty });
     }
 
     [HttpGet("servarr-servers/{type}")]
     [Authorize(Roles = "Administrator")]
-    public async Task<ActionResult> GetServarrServers(string type, [FromServices] ServarrProgressService progressService, CancellationToken cancellationToken)
+    public async Task<ActionResult> GetServarrServers(
+        string type,
+        [FromServices] ServarrProgressService progressService,
+        CancellationToken cancellationToken
+    )
     {
         if (type is not ("radarr" or "sonarr"))
         {
@@ -628,15 +693,13 @@ public class SeerrFinController : ControllerBase
         }
 
         JArray servers = await progressService.GetServerOptionsAsync(type, cancellationToken).ConfigureAwait(false);
+
         return Content(servers.ToString(Newtonsoft.Json.Formatting.None), "application/json");
     }
 
     [HttpGet("details/{mediaType}/{mediaId}")]
     [Authorize]
-    public ActionResult GetDetails(
-        string mediaType,
-        int mediaId,
-        [FromServices] IUserManager userManager)
+    public ActionResult GetDetails(string mediaType, int mediaId, [FromServices] IUserManager userManager)
     {
         JObject? details = _discoveryService.GetMediaDetails(GetUsername(userManager) ?? string.Empty, mediaType, mediaId);
         if (details == null)
@@ -665,33 +728,30 @@ public class SeerrFinController : ControllerBase
     public async Task<ActionResult<JustWatchQualitiesDto>> GetJustWatchQualities(
         string mediaType,
         int tmdbId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (tmdbId <= 0)
         {
             return BadRequest();
         }
 
-        if (!string.Equals(mediaType, "movie", StringComparison.OrdinalIgnoreCase) &&
-            !string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.Equals(mediaType, "movie", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase)
+        )
         {
             return BadRequest();
         }
 
-        JustWatchQualitiesDto? qualities = await _justWatchQualitiesService
-            .GetQualitiesAsync(mediaType, tmdbId, cancellationToken)
+        JustWatchQualitiesDto? qualities = await _justWatchQualitiesService.GetQualitiesAsync(mediaType, tmdbId, cancellationToken)
             .ConfigureAwait(false);
-
         if (qualities == null)
         {
             return NotFound();
         }
 
-        return Ok(new
-        {
-            highestReleasedQuality = qualities.HighestReleasedQuality,
-            mostCommonQuality = qualities.MostCommonQuality
-        });
+        return Ok(new { highestReleasedQuality = qualities.HighestReleasedQuality, mostCommonQuality = qualities.MostCommonQuality });
     }
 
     [HttpGet("request-options/{mediaType}")]
@@ -713,6 +773,7 @@ public class SeerrFinController : ControllerBase
             ["canRequestAdvanced"] = result.CanRequestAdvanced,
             ["options"] = result.Options
         };
+
         return Content(payload.ToString(Newtonsoft.Json.Formatting.None), "application/json");
     }
 
@@ -723,7 +784,8 @@ public class SeerrFinController : ControllerBase
         [FromQuery] int take = 20,
         [FromQuery] int skip = 0,
         [FromQuery] string? filter = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         Guid userId = GetUserId();
         string? username = GetUsername(userManager);
@@ -736,21 +798,14 @@ public class SeerrFinController : ControllerBase
             .GetRequestsAsync(userId, username, take, skip, filter, cancellationToken)
             .ConfigureAwait(false);
 
-        return new ContentResult
-        {
-            StatusCode = statusCode,
-            Content = body,
-            ContentType = "application/json"
-        };
+        return new ContentResult { StatusCode = statusCode, Content = body, ContentType = "application/json" };
     }
 
     [HttpGet("proxy/avatar")]
     [Authorize]
     public async Task<ActionResult> ProxyAvatar([FromQuery] string? path, CancellationToken cancellationToken)
     {
-        (byte[]? data, string? contentType) = await _requestsService
-            .GetAvatarAsync(path, cancellationToken)
-            .ConfigureAwait(false);
+        (byte[]? data, string? contentType) = await _requestsService.GetAvatarAsync(path, cancellationToken).ConfigureAwait(false);
 
         if (data == null || contentType == null)
         {
@@ -765,7 +820,8 @@ public class SeerrFinController : ControllerBase
     public async Task<ActionResult> MakeDiscoverRequest(
         [FromServices] IUserManager userManager,
         [FromBody] DiscoverRequestPayload payload,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         string? username = GetUsername(userManager);
         if (string.IsNullOrWhiteSpace(username))
@@ -773,16 +829,10 @@ public class SeerrFinController : ControllerBase
             return Forbid();
         }
 
-        (int statusCode, string body, string contentType) = await _requestService
-            .SubmitRequestAsync(username, payload, cancellationToken)
+        (int statusCode, string body, string contentType) = await _requestService.SubmitRequestAsync(username, payload, cancellationToken)
             .ConfigureAwait(false);
 
-        return new ContentResult
-        {
-            StatusCode = statusCode,
-            Content = body,
-            ContentType = contentType
-        };
+        return new ContentResult { StatusCode = statusCode, Content = body, ContentType = contentType };
     }
 
     [HttpGet("letterboxd/sync/progress")]
@@ -796,14 +846,13 @@ public class SeerrFinController : ControllerBase
         }
 
         Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+
         return Ok(_letterboxdWatchlistService.GetSyncProgress(userId));
     }
 
     [HttpPost("letterboxd/sync")]
     [Authorize]
-    public async Task<ActionResult> SyncLetterboxdWatchlist(
-        [FromQuery] string letterboxdUsername,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult> SyncLetterboxdWatchlist([FromQuery] string letterboxdUsername, CancellationToken cancellationToken)
     {
         Guid userId = GetUserId();
         if (userId == Guid.Empty)
@@ -818,18 +867,20 @@ public class SeerrFinController : ControllerBase
 
         try
         {
-            (List<BaseItemDto> items, int totalCount, int resolvedCount, int unresolvedCount) = await _letterboxdWatchlistService
-                .SyncAsync(userId, letterboxdUsername, cancellationToken)
-                .ConfigureAwait(false);
+            (List<BaseItemDto> items, int totalCount, int resolvedCount, int unresolvedCount) =
+                await _letterboxdWatchlistService.SyncAsync(userId, letterboxdUsername, cancellationToken).ConfigureAwait(false);
             Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
-            return Ok(new
-            {
-                letterboxdUsername = letterboxdUsername.Trim(),
-                totalCount,
-                resolvedCount,
-                unresolvedCount,
-                items
-            });
+
+            return Ok(
+                new
+                {
+                    letterboxdUsername = letterboxdUsername.Trim(),
+                    totalCount,
+                    resolvedCount,
+                    unresolvedCount,
+                    items
+                }
+            );
         }
         catch (ArgumentException ex)
         {
@@ -852,6 +903,7 @@ public class SeerrFinController : ControllerBase
         }
 
         Response.Headers.CacheControl = "no-cache, no-store, must-revalidate";
+
         return Ok(_letterboxdBulkRequestService.GetRequestProgress(userId));
     }
 
@@ -859,7 +911,8 @@ public class SeerrFinController : ControllerBase
     [Authorize]
     public ActionResult CheckLetterboxdRequestStatus(
         [FromServices] IUserManager userManager,
-        [FromBody] LetterboxdBulkRequestPayload payload)
+        [FromBody] LetterboxdBulkRequestPayload payload
+    )
     {
         string? username = GetUsername(userManager);
         if (string.IsNullOrWhiteSpace(username))
@@ -872,8 +925,8 @@ public class SeerrFinController : ControllerBase
             return BadRequest(new { message = "Select at least one movie." });
         }
 
-        List<int> alreadyRequested = _discoveryService
-            .GetAlreadyRequestedMovieIds(username, payload.TmdbIds);
+        List<int> alreadyRequested = _discoveryService.GetAlreadyRequestedMovieIds(username, payload.TmdbIds);
+
         return Ok(new { tmdbIds = alreadyRequested });
     }
 
@@ -882,7 +935,8 @@ public class SeerrFinController : ControllerBase
     public async Task<ActionResult<LetterboxdBulkRequestResultDto>> RequestLetterboxdItems(
         [FromServices] IUserManager userManager,
         [FromBody] LetterboxdBulkRequestPayload payload,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         Guid userId = GetUserId();
         string? username = GetUsername(userManager);
@@ -901,6 +955,7 @@ public class SeerrFinController : ControllerBase
             LetterboxdBulkRequestResultDto result = await _letterboxdBulkRequestService
                 .SubmitBulkRequestAsync(userId, username, payload, cancellationToken)
                 .ConfigureAwait(false);
+
             return Ok(result);
         }
         catch (ArgumentException ex)
@@ -911,14 +966,14 @@ public class SeerrFinController : ControllerBase
 
     private ActionResult ServeEmbedded(string resourceName, string contentType)
     {
-        Stream? stream = Assembly.GetExecutingAssembly()
-            .GetManifestResourceStream($"{typeof(SeerrFinPlugin).Namespace}.{resourceName}");
+        Stream? stream = Assembly.GetExecutingAssembly().GetManifestResourceStream($"{typeof(SeerrFinPlugin).Namespace}.{resourceName}");
         if (stream == null)
         {
             return NotFound();
         }
 
         SetCacheHeaders();
+
         return File(stream, contentType);
     }
 }

@@ -24,6 +24,7 @@ public static class AdvancedSettingsHelper
         advanced.Letterboxd ??= new AdvancedLetterboxdSettings();
 
         Clamp(advanced);
+
         return advanced;
     }
 
@@ -33,6 +34,7 @@ public static class AdvancedSettingsHelper
         d.CarouselMaxJellyseerrPages = Clamp(d.CarouselMaxJellyseerrPages, 1, 50);
         d.GridMaxJellyseerrPages = Clamp(d.GridMaxJellyseerrPages, 1, 100);
         d.GridPageSize = Clamp(d.GridPageSize, 1, 200);
+
         if (string.IsNullOrWhiteSpace(d.AnimeDiscoverPath))
         {
             d.AnimeDiscoverPath = "/api/v1/discover/tv?genre=16&keywords=210024";
@@ -51,6 +53,7 @@ public static class AdvancedSettingsHelper
         t.BackdropBatchConcurrency = Clamp(t.BackdropBatchConcurrency, 1, 20);
         t.BackdropImageSize = SanitizeImageSize(t.BackdropImageSize, "w780");
         t.PosterImageSize = SanitizeImageSize(t.PosterImageSize, "w600_and_h900_bestv2");
+
         if (string.IsNullOrWhiteSpace(t.BackdropLanguageFilter))
         {
             t.BackdropLanguageFilter = "en,null,en-US";
@@ -60,6 +63,7 @@ public static class AdvancedSettingsHelper
 
         AdvancedJustWatchSettings jw = advanced.JustWatch;
         jw.SearchResultLimit = Clamp(jw.SearchResultLimit, 1, 50);
+
         if (string.IsNullOrWhiteSpace(jw.Country))
         {
             jw.Country = "US";
@@ -87,6 +91,7 @@ public static class AdvancedSettingsHelper
         }
 
         AdvancedLetterboxdSettings lb = Resolve(config).Letterboxd;
+
         try
         {
             return Regex.IsMatch(username.Trim(), lb.UsernamePattern, RegexOptions.None, TimeSpan.FromMilliseconds(100));
@@ -100,9 +105,11 @@ public static class AdvancedSettingsHelper
     private static string SanitizeUsernamePattern(string? value)
     {
         string pattern = string.IsNullOrWhiteSpace(value) ? "^[a-zA-Z0-9_-]{1,30}$" : value.Trim();
+
         try
         {
             _ = new Regex(pattern, RegexOptions.None, TimeSpan.FromMilliseconds(50));
+
             return pattern;
         }
         catch (ArgumentException)
@@ -134,13 +141,11 @@ public static class AdvancedSettingsHelper
         return value.Trim();
     }
 
-    private static string NormalizeGenreBackdropMode(string? value) =>
-        string.Equals(value, "first", StringComparison.OrdinalIgnoreCase) ? "first" : "random";
+    private static string NormalizeGenreBackdropMode(string? value) => string.Equals(value, "first", StringComparison.OrdinalIgnoreCase) ? "first" : "random";
 
     private static string NormalizeQualityMode(string? value)
     {
-        string normalized = (value ?? "singleProfile").Trim()
-            .Replace("-", string.Empty, StringComparison.Ordinal)
+        string normalized = (value ?? "singleProfile").Trim().Replace("-", string.Empty, StringComparison.Ordinal)
             .Replace("_", string.Empty, StringComparison.Ordinal)
             .ToLowerInvariant();
 
@@ -155,6 +160,7 @@ public static class AdvancedSettingsHelper
     private static string NormalizeAlreadyRequestedMode(string? value)
     {
         string normalized = (value ?? "prompt").Trim().ToLowerInvariant();
+
         return normalized switch
         {
             "skip" => "skip",
@@ -166,6 +172,7 @@ public static class AdvancedSettingsHelper
     private static string NormalizeAlreadyRequestedScope(string? value)
     {
         string normalized = (value ?? "anyMediaInfo").Trim().ToLowerInvariant();
+
         return normalized switch
         {
             "availableonly" => "availableOnly",
@@ -173,7 +180,9 @@ public static class AdvancedSettingsHelper
         };
     }
 
-    private static readonly Dictionary<string, string[]> DefaultQualityLabelAliases = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string[]> DefaultQualityLabelAliases = new(
+        StringComparer.OrdinalIgnoreCase
+    )
     {
         ["Ultra-HD"] = new[] { "Ultra-HD", "Ultra HD", "4K", "UHD", "2160p" },
         ["HD - 720p/1080p"] = new[] { "HD - 720p/1080p", "HD", "720p", "1080p", "HD-720p/1080p" },
@@ -183,12 +192,10 @@ public static class AdvancedSettingsHelper
     public static object BuildFrontendPayload(PluginConfiguration config)
     {
         AdvancedSettings advanced = Resolve(config);
+
         return new
         {
-            discovery = new
-            {
-                gridPageSize = advanced.Discovery.GridPageSize
-            },
+            discovery = new { gridPageSize = advanced.Discovery.GridPageSize },
             carousel = new
             {
                 carouselScrollThreshold = advanced.Carousel.CarouselScrollThreshold,

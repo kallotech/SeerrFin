@@ -14,11 +14,18 @@ namespace Jellyfin.Plugin.SeerrFin.Services;
 
 public class LetterboxdWatchlistService
 {
-    private const string UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
+    private const string UserAgent =
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
 
-    private static readonly Regex MovieEntryRegex = new(@"data-item-slug=""([^""]+)""[^>]*data-item-link=""[^""]*"" data-item-full-display-name=""([^""]+)""", RegexOptions.Compiled);
+    private static readonly Regex MovieEntryRegex = new(
+        @"data-item-slug=""([^""]+)""[^>]*data-item-link=""[^""]*"" data-item-full-display-name=""([^""]+)""",
+        RegexOptions.Compiled
+    );
 
-    private static readonly Regex PageNumberRegex = new(@"<li class=""paginate-page[^""]*""[^>]*>(?:<a[^>]*>|<span[^>]*>)\s*(\d+)", RegexOptions.Compiled);
+    private static readonly Regex PageNumberRegex = new(
+        @"<li class=""paginate-page[^""]*""[^>]*>(?:<a[^>]*>|<span[^>]*>)\s*(\d+)",
+        RegexOptions.Compiled
+    );
 
     private static readonly Regex DisplayNameRegex = new(@"^(.+?) \((\d{4})\)$", RegexOptions.Compiled);
 
@@ -44,9 +51,14 @@ public class LetterboxdWatchlistService
         return new LetterboxdSyncProgressDto { Percent = 0, Phase = string.Empty, IsActive = false };
     }
 
-    public async Task<(List<BaseItemDto> Items, int TotalCount, int ResolvedCount, int UnresolvedCount)> SyncAsync(Guid userId, string username, CancellationToken cancellationToken = default)
+    public async Task<(List<BaseItemDto> Items, int TotalCount, int ResolvedCount, int UnresolvedCount)> SyncAsync(
+        Guid userId,
+        string username,
+        CancellationToken cancellationToken = default
+    )
     {
         username = username.Trim();
+
         if (!AdvancedSettingsHelper.IsValidLetterboxdUsername(SeerrFinPlugin.Instance.Configuration, username))
         {
             throw new ArgumentException("Invalid Letterboxd username.");
@@ -73,16 +85,20 @@ public class LetterboxdWatchlistService
             int totalPages = pageNumbers.Count == 0 ? 1 : pageNumbers[^1];
 
             List<(string Slug, string Title, int Year)> movies = new();
+
             for (int page = 1; page <= totalPages; page++)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
                 // Page 1 html already loaded. fetch remaining pages separately.
-                string pageHtml = page == 1
-                    ? html
-                    : await FetchLetterboxdAsync(
-                        $"https://letterboxd.com/{Uri.EscapeDataString(username)}/watchlist/page/{page}/",
-                        cancellationToken).ConfigureAwait(false);
+                string pageHtml =
+                    page == 1
+                        ? html
+                        : await FetchLetterboxdAsync(
+                                $"https://letterboxd.com/{Uri.EscapeDataString(username)}/watchlist/page/{page}/",
+                                cancellationToken
+                            )
+                            .ConfigureAwait(false);
 
                 foreach ((string slug, string title, int year) in MoviesFromPage(pageHtml))
                 {
@@ -124,10 +140,7 @@ public class LetterboxdWatchlistService
                 }
                 else if (seenTmdbIds.Add(movie.Id))
                 {
-                    Dictionary<string, string> providerIds = new()
-                    {
-                        { "Tmdb", movie.Id.ToString(CultureInfo.InvariantCulture) }
-                    };
+                    Dictionary<string, string> providerIds = new() { { "Tmdb", movie.Id.ToString(CultureInfo.InvariantCulture) } };
 
                     if (!string.IsNullOrEmpty(movie.PosterPath))
                     {
@@ -139,13 +152,15 @@ public class LetterboxdWatchlistService
                         providerIds["TmdbBackdropPath"] = movie.BackdropPath;
                     }
 
-                    items.Add(new BaseItemDto
-                    {
-                        Name = title,
-                        SourceType = "movie",
-                        PremiereDate = new DateTime(year, 1, 1),
-                        ProviderIds = providerIds
-                    });
+                    items.Add(
+                        new BaseItemDto
+                        {
+                            Name = title,
+                            SourceType = "movie",
+                            PremiereDate = new DateTime(year, 1, 1),
+                            ProviderIds = providerIds
+                        }
+                    );
                 }
 
                 resolvedIndex++;
@@ -153,6 +168,7 @@ public class LetterboxdWatchlistService
             }
 
             SetSyncProgress(userId, 100, "tmdb");
+
             return (items, movies.Count, items.Count, unresolvedCount);
         }
         finally
@@ -169,6 +185,7 @@ public class LetterboxdWatchlistService
         }
 
         int pagesWeight = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).Letterboxd.SyncPagesProgressWeight;
+
         return (int)Math.Round(page * pagesWeight / (double)totalPages);
     }
 
@@ -181,6 +198,7 @@ public class LetterboxdWatchlistService
 
         int pagesWeight = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).Letterboxd.SyncPagesProgressWeight;
         int tmdbWeight = Math.Max(0, 100 - pagesWeight);
+
         return pagesWeight + (int)Math.Round(resolvedIndex * tmdbWeight / (double)totalMovies);
     }
 
@@ -214,7 +232,8 @@ public class LetterboxdWatchlistService
             yield return (
                 match.Groups[1].Value,
                 titleMatch.Groups[1].Value.Trim(),
-                int.Parse(titleMatch.Groups[2].Value, CultureInfo.InvariantCulture));
+                int.Parse(titleMatch.Groups[2].Value, CultureInfo.InvariantCulture)
+            );
         }
     }
 
@@ -228,6 +247,7 @@ public class LetterboxdWatchlistService
         using HttpRequestMessage request = CreateLetterboxdRequest(url, url, includeSecFetchUser: false);
         using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
+
         return await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
     }
 
@@ -240,12 +260,14 @@ public class LetterboxdWatchlistService
         request.Headers.TryAddWithoutValidation("Sec-Fetch-Mode", "navigate");
         request.Headers.TryAddWithoutValidation("Sec-Fetch-Site", "same-origin");
         request.Headers.TryAddWithoutValidation("Referer", referer);
+
         if (includeSecFetchUser)
         {
             request.Headers.TryAddWithoutValidation("Sec-Fetch-User", "?1");
         }
 
         request.Headers.TryAddWithoutValidation("Cookie", "useMobileSite=no");
+
         return request;
     }
 
@@ -253,12 +275,14 @@ public class LetterboxdWatchlistService
 
     private async Task<TmdbMovieRefs?> SearchTmdbMovieAsync(string title, int year, string apiKey, CancellationToken cancellationToken)
     {
-        string url = $"https://api.themoviedb.org/3/search/movie?query={Uri.EscapeDataString(title)}&year={year.ToString(CultureInfo.InvariantCulture)}";
+        string url =
+            $"https://api.themoviedb.org/3/search/movie?query={Uri.EscapeDataString(title)}&year={year.ToString(CultureInfo.InvariantCulture)}";
         using HttpRequestMessage request = CreateTmdbRequest(url, apiKey);
         using HttpResponseMessage response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
         string json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
         // Require exact title match and release year to prevent wrong tmdb hit
         foreach (JObject movie in JObject.Parse(json).Value<JArray>("results")?.OfType<JObject>() ?? [])
         {
@@ -276,7 +300,8 @@ public class LetterboxdWatchlistService
             return new TmdbMovieRefs(
                 movie.Value<int>("id"),
                 NormalizeTmdbImagePath(movie.Value<string>("poster_path")),
-                NormalizeTmdbImagePath(movie.Value<string>("backdrop_path")));
+                NormalizeTmdbImagePath(movie.Value<string>("backdrop_path"))
+            );
         }
 
         return null;
@@ -303,7 +328,8 @@ public class LetterboxdWatchlistService
         return new TmdbMovieRefs(
             id.Value,
             NormalizeTmdbImagePath(movie.Value<string>("poster_path")),
-            NormalizeTmdbImagePath(movie.Value<string>("backdrop_path")));
+            NormalizeTmdbImagePath(movie.Value<string>("backdrop_path"))
+        );
     }
 
     private static string? NormalizeTmdbImagePath(string? path)
@@ -316,14 +342,17 @@ public class LetterboxdWatchlistService
         return path.StartsWith('/') ? path : "/" + path;
     }
 
-    // Fallback if no tmdb id found from search: read data-tmdb-id from Letterboxd film page 
+    // Fallback if no tmdb id found from search: read data-tmdb-id from Letterboxd film page
     // This takes around 2x longer with only letterboxd scraping, so use tmdb search as primary source.
     private async Task<int?> TmdbIdFromLetterboxdAsync(string slug, CancellationToken cancellationToken)
     {
         string html = await FetchLetterboxdAsync($"https://letterboxd.com/film/{Uri.EscapeDataString(slug)}/", cancellationToken)
             .ConfigureAwait(false);
         Match match = TmdbIdRegex.Match(html);
-        return match.Success && int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int tmdbId)
+
+        return
+            match.Success
+            && int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out int tmdbId)
             ? tmdbId
             : null;
     }
@@ -339,8 +368,12 @@ public class LetterboxdWatchlistService
         }
         else
         {
-            request.RequestUri = new Uri(url + (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") +
-                "api_key=" + Uri.EscapeDataString(apiKey));
+            request.RequestUri = new Uri(
+                url
+                    + (url.Contains('?', StringComparison.Ordinal) ? "&" : "?")
+                    + "api_key="
+                    + Uri.EscapeDataString(apiKey)
+            );
         }
 
         return request;

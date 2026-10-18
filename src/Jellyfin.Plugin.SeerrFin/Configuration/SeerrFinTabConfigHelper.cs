@@ -5,11 +5,15 @@ public static class SeerrFinTabConfigHelper
     private const string JellyfinHomeKey = "jf:home";
     private const string JellyfinFavoritesKey = "jf:favorites";
 
-    private static readonly HashSet<string> KnownTabIds = new(SeerrFinTabConfig.CreateDefaults().Select(tab => tab.Id), StringComparer.OrdinalIgnoreCase);
+    private static readonly HashSet<string> KnownTabIds = new(
+        SeerrFinTabConfig.CreateDefaults().Select(tab => tab.Id),
+        StringComparer.OrdinalIgnoreCase
+    );
 
     public static List<SeerrFinTabConfig> Normalize(IEnumerable<SeerrFinTabConfig>? tabs)
     {
         var defaults = SeerrFinTabConfig.CreateDefaults();
+
         if (tabs == null)
         {
             return defaults;
@@ -17,6 +21,7 @@ public static class SeerrFinTabConfigHelper
 
         var enabledById = new Dictionary<string, bool>(StringComparer.OrdinalIgnoreCase);
         var titleById = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
         foreach (SeerrFinTabConfig tab in tabs)
         {
             string id = (tab.Id ?? string.Empty).Trim().ToLowerInvariant();
@@ -55,18 +60,21 @@ public static class SeerrFinTabConfigHelper
     private static bool TryParseSeerrFinKey(string? key, out string id)
     {
         id = string.Empty;
+
         if (string.IsNullOrWhiteSpace(key) || !key.StartsWith("sf:", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
 
         id = key[3..].Trim().ToLowerInvariant();
+
         return KnownTabIds.Contains(id);
     }
 
     private static bool TryParseCustomTabsKey(string? key, out int index)
     {
         index = -1;
+
         if (string.IsNullOrWhiteSpace(key) || !key.StartsWith("ct:", StringComparison.OrdinalIgnoreCase))
         {
             return false;
@@ -104,8 +112,10 @@ public static class SeerrFinTabConfigHelper
                 key = SeerrFinKey(key);
             }
 
-            if (string.Equals(key, JellyfinHomeKey, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(key, JellyfinFavoritesKey, StringComparison.OrdinalIgnoreCase))
+            if (
+                string.Equals(key, JellyfinHomeKey, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(key, JellyfinFavoritesKey, StringComparison.OrdinalIgnoreCase)
+            )
             {
                 continue;
             }
@@ -132,7 +142,8 @@ public static class SeerrFinTabConfigHelper
 
             if (tab.Id == "discover")
             {
-                int requestsIndex = result.FindIndex(item => string.Equals(item, SeerrFinKey("requests"), StringComparison.OrdinalIgnoreCase));
+                int requestsIndex = result.FindIndex(item => string.Equals(item, SeerrFinKey("requests"), StringComparison.OrdinalIgnoreCase)
+                );
                 if (requestsIndex >= 0)
                 {
                     seen.Add(key);

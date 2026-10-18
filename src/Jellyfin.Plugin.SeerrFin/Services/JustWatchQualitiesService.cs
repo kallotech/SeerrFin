@@ -13,7 +13,8 @@ namespace Jellyfin.Plugin.SeerrFin.Services;
 public class JustWatchQualitiesService
 {
     private const string GraphQlUrl = "https://apis.justwatch.com/graphql";
-    private const string UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
+    private const string UserAgent =
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36";
 
     // All justwatch qualities and their Seerr tiers (excluding canvas)
     private static readonly Dictionary<string, int> JwQualities = new(StringComparer.Ordinal)
@@ -28,12 +29,7 @@ public class JustWatchQualitiesService
     };
 
     // Seerr tiers and their labels
-    private static readonly Dictionary<int, string> SeerrQualityLabels = new()
-    {
-        [3] = "Ultra-HD",
-        [2] = "HD - 720p/1080p",
-        [1] = "SD"
-    };
+    private static readonly Dictionary<int, string> SeerrQualityLabels = new() { [3] = "Ultra-HD", [2] = "HD - 720p/1080p", [1] = "SD" };
 
     private const string SearchQuery = """
         query GetSearchResults($country: Country!, $language: Language!, $first: Int!, $searchQuery: String, $location: String!) {
@@ -117,9 +113,11 @@ public class JustWatchQualitiesService
             }
 
             // Match on normalized title, release year, and media type
-            if (!string.Equals(Normalize(content.Value<string>("title")), normalizedTitle, StringComparison.Ordinal) ||
-                content.Value<int?>("originalReleaseYear") != metadata.Value.Year ||
-                !string.Equals(node.Value<string>("objectType"), jwType, StringComparison.Ordinal))
+            if (
+                !string.Equals(Normalize(content.Value<string>("title")), normalizedTitle, StringComparison.Ordinal)
+                || content.Value<int?>("originalReleaseYear") != metadata.Value.Year
+                || !string.Equals(node.Value<string>("objectType"), jwType, StringComparison.Ordinal)
+            )
             {
                 continue;
             }
@@ -145,14 +143,14 @@ public class JustWatchQualitiesService
         return null;
     }
 
-    private static JustWatchQualitiesDto ToDto(QualityResult result) =>
-        new()
-        {
-            HighestReleasedQuality = SeerrQualityLabels[result.Highest],
-            MostCommonQuality = SeerrQualityLabels[result.MostCommon]
-        };
+    private static JustWatchQualitiesDto ToDto(QualityResult result) => new() { HighestReleasedQuality = SeerrQualityLabels[result.Highest], MostCommonQuality = SeerrQualityLabels[result.MostCommon] };
 
-    private async Task<(string Title, int Year)?> FetchTmdbMetadataAsync(string mediaType, int tmdbId, string apiKey, CancellationToken cancellationToken)
+    private async Task<(string Title, int Year)?> FetchTmdbMetadataAsync(
+        string mediaType,
+        int tmdbId,
+        string apiKey,
+        CancellationToken cancellationToken
+    )
     {
         bool isTv = string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase);
         string segment = isTv ? "tv" : "movie";
@@ -187,6 +185,7 @@ public class JustWatchQualitiesService
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "SeerrFin • failed to fetch TMDB metadata for JustWatch qualities {Type}/{TmdbId}", mediaType, tmdbId);
+
             return null;
         }
     }
@@ -209,10 +208,15 @@ public class JustWatchQualitiesService
         };
 
         JObject? data = await PostGraphQlAsync(payload, cancellationToken).ConfigureAwait(false);
+
         return data?["data"]?["searchTitles"]?["edges"] as JArray;
     }
 
-    private async Task<JArray?> GetJwPageOffersAsync(string fullPath, AdvancedJustWatchSettings settings, CancellationToken cancellationToken)
+    private async Task<JArray?> GetJwPageOffersAsync(
+        string fullPath,
+        AdvancedJustWatchSettings settings,
+        CancellationToken cancellationToken
+    )
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
         var payload = new JObject
@@ -229,6 +233,7 @@ public class JustWatchQualitiesService
         };
 
         JObject? data = await PostGraphQlAsync(payload, cancellationToken).ConfigureAwait(false);
+
         return DedupeOffers(data?["data"]?["urlV2"]?["node"]?["offers"] as JArray);
     }
 
@@ -247,11 +252,13 @@ public class JustWatchQualitiesService
             }
 
             string json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
             return JObject.Parse(json);
         }
         catch (Exception ex)
         {
             _logger.LogDebug(ex, "SeerrFin • JustWatch GraphQL request failed");
+
             return null;
         }
     }
@@ -276,17 +283,18 @@ public class JustWatchQualitiesService
     private static bool IsBearerToken(string apiKey)
     {
         string[] parts = apiKey.Split('.');
+
         return parts.Length == 3;
     }
 
     private static string AppendQuery(string url, string name, string value)
     {
         string separator = url.Contains('?', StringComparison.Ordinal) ? "&" : "?";
+
         return url + separator + Uri.EscapeDataString(name) + "=" + Uri.EscapeDataString(value);
     }
 
-    private static string Normalize(string? value) =>
-        Regex.Replace(value ?? string.Empty, @"\W+", string.Empty).ToLowerInvariant();
+    private static string Normalize(string? value) => Regex.Replace(value ?? string.Empty, @"\W+", string.Empty).ToLowerInvariant();
 
     private static JArray? DedupeOffers(JArray? offers)
     {
@@ -324,12 +332,7 @@ public class JustWatchQualitiesService
 
     private static QualityResult? FindQualities(JArray? offers)
     {
-        var tierCounts = new Dictionary<int, int>
-        {
-            [1] = 0,
-            [2] = 0,
-            [3] = 0
-        };
+        var tierCounts = new Dictionary<int, int> { [1] = 0, [2] = 0, [3] = 0 };
         int highest = 0;
 
         if (offers != null)
@@ -356,8 +359,7 @@ public class JustWatchQualitiesService
             return null;
         }
 
-        int mostCommon = tierCounts
-            .OrderByDescending(entry => entry.Value)
+        int mostCommon = tierCounts.OrderByDescending(entry => entry.Value)
             .ThenByDescending(entry => entry.Key) // Tie-break for higher quality
             .First()
             .Key;

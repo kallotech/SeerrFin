@@ -18,9 +18,7 @@ public class JellyseerrDiscoveryService
     private readonly ImageCacheService _imageCacheService;
     private readonly ILogger<JellyseerrDiscoveryService> _logger;
 
-    public JellyseerrDiscoveryService(
-        ImageCacheService imageCacheService,
-        ILogger<JellyseerrDiscoveryService> logger)
+    public JellyseerrDiscoveryService(ImageCacheService imageCacheService, ILogger<JellyseerrDiscoveryService> logger)
     {
         _imageCacheService = imageCacheService;
         _logger = logger;
@@ -29,21 +27,32 @@ public class JellyseerrDiscoveryService
     public QueryResult<BaseItemDto> GetAnimeRow(string username, int startIndex = 0, int? limit = null)
     {
         AdvancedDiscoverySettings discovery = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).Discovery;
-        return GetDiscoverRow(username, discovery.AnimeDiscoverPath, "tv", startIndex, limit, useSeerrMapping: discovery.UseSeerrMappingForAnime);
+
+        return GetDiscoverRow(
+            username,
+            discovery.AnimeDiscoverPath,
+            "tv",
+            startIndex,
+            limit,
+            useSeerrMapping: discovery.UseSeerrMappingForAnime
+        );
     }
 
     public QueryResult<BaseItemDto> Search(string username, string query, string? language = null)
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
-        if (string.IsNullOrWhiteSpace(config.JellyseerrUrl) ||
-            string.IsNullOrWhiteSpace(config.JellyseerrApiKey) ||
-            string.IsNullOrWhiteSpace(username) ||
-            string.IsNullOrWhiteSpace(query))
+        if (
+            string.IsNullOrWhiteSpace(config.JellyseerrUrl)
+            || string.IsNullOrWhiteSpace(config.JellyseerrApiKey)
+            || string.IsNullOrWhiteSpace(username)
+            || string.IsNullOrWhiteSpace(query)
+        )
         {
             return EmptyResult();
         }
 
         query = query.Trim();
+
         if (query.Length > 256)
         {
             int cut = 256;
@@ -67,6 +76,7 @@ public class JellyseerrDiscoveryService
         try
         {
             string path = $"/api/v1/search?query={Uri.EscapeDataString(query)}";
+
             if (!string.IsNullOrWhiteSpace(language))
             {
                 path += $"&language={Uri.EscapeDataString(language.Trim())}";
@@ -88,11 +98,14 @@ public class JellyseerrDiscoveryService
 
             DiscoverItemFilterOptions mapping = ResolveSearchMapping();
             List<BaseItemDto> items = new();
+
             foreach (JObject item in results.OfType<JObject>())
             {
                 string? mediaType = item.Value<string>("mediaType");
-                if (!string.Equals(mediaType, "movie", StringComparison.OrdinalIgnoreCase) &&
-                    !string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase))
+                if (
+                    !string.Equals(mediaType, "movie", StringComparison.OrdinalIgnoreCase)
+                    && !string.Equals(mediaType, "tv", StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     continue;
                 }
@@ -114,11 +127,19 @@ public class JellyseerrDiscoveryService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to search Seerr for {Query}", query);
+
             return EmptyResult();
         }
     }
 
-    public QueryResult<BaseItemDto> GetDiscoverRow(string username, string jellyseerrPath, string? mediaTypeFilter = null, int startIndex = 0, int? limit = null, bool useSeerrMapping = false)
+    public QueryResult<BaseItemDto> GetDiscoverRow(
+        string username,
+        string jellyseerrPath,
+        string? mediaTypeFilter = null,
+        int startIndex = 0,
+        int? limit = null,
+        bool useSeerrMapping = false
+    )
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
         if (string.IsNullOrWhiteSpace(config.JellyseerrUrl) || string.IsNullOrWhiteSpace(config.JellyseerrApiKey))
@@ -145,22 +166,32 @@ public class JellyseerrDiscoveryService
         if (hasReleaseTypeFilter && string.IsNullOrWhiteSpace(tmdbApiKey))
         {
             _logger.LogWarning("SeerrFin • release type filters are configured but no TMDB API key set");
+
             return EmptyResult();
         }
 
         JObject preferences;
         JObject defaults = new();
+
         try
         {
             bool provider = jellyseerrPath.Contains("watchProviders=", StringComparison.Ordinal);
-            preferences = hasReleaseTypeFilter || provider ? JellyseerrProfileService.ReadMainAsync(client, jellyseerrUserId.Value).GetAwaiter().GetResult() : new JObject();
-            if (hasReleaseTypeFilter || provider) defaults = JellyseerrProfileService.ReadDefaultsAsync(client).GetAwaiter().GetResult();
+            preferences =
+                hasReleaseTypeFilter || provider
+                    ? JellyseerrProfileService.ReadMainAsync(client, jellyseerrUserId.Value).GetAwaiter().GetResult()
+                    : new JObject();
+
+            if (hasReleaseTypeFilter || provider)
+                defaults = JellyseerrProfileService.ReadDefaultsAsync(client).GetAwaiter().GetResult();
             if (provider && !jellyseerrPath.Contains("watchRegion=", StringComparison.Ordinal))
-                jellyseerrPath += "&watchRegion=" + Uri.EscapeDataString(JellyseerrProfileService.StreamingRegion(preferences, config, defaults));
+                jellyseerrPath +=
+                    "&watchRegion="
+                    + Uri.EscapeDataString(JellyseerrProfileService.StreamingRegion(preferences, config, defaults));
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to load personal discovery preferences");
+
             return EmptyResult();
         }
 
@@ -177,7 +208,9 @@ public class JellyseerrDiscoveryService
         int skipped = 0;
         int totalResults = 0;
         bool isGridRequest = limit.HasValue;
-        int maxJellyseerrPages = isGridRequest ? discoverySettings.GridMaxJellyseerrPages : discoverySettings.CarouselMaxJellyseerrPages;
+        int maxJellyseerrPages = isGridRequest
+            ? discoverySettings.GridMaxJellyseerrPages
+            : discoverySettings.CarouselMaxJellyseerrPages;
 
         // Paginate until we have enough items or hit the max pages
         while (items.Count < targetLimit && jellyseerrPage <= maxJellyseerrPages)
@@ -185,11 +218,18 @@ public class JellyseerrDiscoveryService
             try
             {
                 JObject? json;
+
                 if (useTmdbReleaseFilter)
                 {
                     if (jellyseerrPath.Contains("/discover/trending", StringComparison.OrdinalIgnoreCase))
                     {
-                        json = FetchTmdbTrendingMoviesJson(tmdbApiKey!, config, jellyseerrPage, releaseTypeCache, preferences.Value<string>("locale") is { Length: > 0 } locale ? locale : defaults.Value<string>("locale") ?? "en");
+                        json = FetchTmdbTrendingMoviesJson(
+                            tmdbApiKey!,
+                            config,
+                            jellyseerrPage,
+                            releaseTypeCache,
+                            preferences.Value<string>("locale")is { Length: > 0 } locale ? locale : defaults.Value<string>("locale") ?? "en"
+                        );
                     }
                     else
                     {
@@ -221,9 +261,11 @@ public class JellyseerrDiscoveryService
                 JArray? results = json.Value<JArray>("results");
                 if (results == null || results.Count == 0)
                 {
-                    if (useTmdbReleaseFilter
+                    if (
+                        useTmdbReleaseFilter
                         && jellyseerrPath.Contains("/discover/trending", StringComparison.OrdinalIgnoreCase)
-                        && jellyseerrPage < maxJellyseerrPages)
+                        && jellyseerrPage < maxJellyseerrPages
+                    )
                     {
                         jellyseerrPage++;
                         continue;
@@ -242,8 +284,10 @@ public class JellyseerrDiscoveryService
                     }
 
                     string? itemMediaType = item.Value<string>("mediaType");
-                    if (!string.IsNullOrEmpty(mediaTypeFilter) &&
-                        !string.Equals(itemMediaType, mediaTypeFilter, StringComparison.OrdinalIgnoreCase))
+                    if (
+                        !string.IsNullOrEmpty(mediaTypeFilter)
+                        && !string.Equals(itemMediaType, mediaTypeFilter, StringComparison.OrdinalIgnoreCase)
+                    )
                     {
                         continue;
                     }
@@ -263,9 +307,7 @@ public class JellyseerrDiscoveryService
                     items.Add(dto);
                 }
 
-                int totalPages = json.Value<int?>("totalPages")
-                    ?? json.Value<int?>("total_pages")
-                    ?? jellyseerrPage;
+                int totalPages = json.Value<int?>("totalPages") ?? json.Value<int?>("total_pages") ?? jellyseerrPage;
                 if (jellyseerrPage >= totalPages)
                 {
                     break;
@@ -273,9 +315,13 @@ public class JellyseerrDiscoveryService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, useTmdbReleaseFilter
-                    ? "SeerrFin • failed to fetch TMDB discover movies for path {Path}"
-                    : "SeerrFin • failed to fetch Seerr path {Path}", jellyseerrPath);
+                _logger.LogWarning(
+                    ex,
+                    useTmdbReleaseFilter
+                        ? "SeerrFin • failed to fetch TMDB discover movies for path {Path}"
+                        : "SeerrFin • failed to fetch Seerr path {Path}",
+                    jellyseerrPath
+                );
                 break;
             }
 
@@ -292,9 +338,8 @@ public class JellyseerrDiscoveryService
 
     public JArray GetGenreSlider(string mediaType, string username)
     {
-        string path = mediaType == "movie"
-            ? "/api/v1/discover/genreslider/movie"
-            : "/api/v1/discover/genreslider/tv";
+        string path = mediaType == "movie" ? "/api/v1/discover/genreslider/movie" : "/api/v1/discover/genreslider/tv";
+
         return GetJsonArray(path, username);
     }
 
@@ -302,9 +347,11 @@ public class JellyseerrDiscoveryService
     {
         PluginConfiguration config = SeerrFinPlugin.Instance.Configuration;
         string region = string.IsNullOrWhiteSpace(config.WatchRegion) ? "US" : config.WatchRegion;
-        string path = mediaType == "movie"
-            ? $"/api/v1/watchproviders/movies?watchRegion={Uri.EscapeDataString(region)}"
-            : $"/api/v1/watchproviders/tv?watchRegion={Uri.EscapeDataString(region)}";
+        string path =
+            mediaType == "movie"
+                ? $"/api/v1/watchproviders/movies?watchRegion={Uri.EscapeDataString(region)}"
+                : $"/api/v1/watchproviders/tv?watchRegion={Uri.EscapeDataString(region)}";
+
         return GetJsonArray(path, username);
     }
 
@@ -319,15 +366,18 @@ public class JellyseerrDiscoveryService
     private static JArray ToBrowseArray(IEnumerable<(int Id, string Name, string Logo, bool WeirdSize)> items)
     {
         JArray array = new();
+
         foreach ((int id, string name, string logo, bool weirdSize) in items)
         {
-            array.Add(new JObject
-            {
-                ["id"] = id,
-                ["name"] = name,
-                ["logo"] = logo,
-                ["weirdSize"] = weirdSize
-            });
+            array.Add(
+                new JObject
+                {
+                    ["id"] = id,
+                    ["name"] = name,
+                    ["logo"] = logo,
+                    ["weirdSize"] = weirdSize
+                }
+            );
         }
 
         return array;
@@ -442,11 +492,11 @@ public class JellyseerrDiscoveryService
 
     public List<int> GetAlreadyRequestedMovieIds(string username, IEnumerable<int> tmdbIds)
     {
-        string scope = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration)
-            .Letterboxd.AlreadyRequestedStatusScope;
+        string scope = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).Letterboxd.AlreadyRequestedStatusScope;
         bool availableOnly = string.Equals(scope, "availableOnly", StringComparison.OrdinalIgnoreCase);
 
         List<int> alreadyRequested = new();
+
         foreach (int tmdbId in tmdbIds.Distinct())
         {
             JObject? details = GetMediaDetails(username, "movie", tmdbId);
@@ -468,6 +518,7 @@ public class JellyseerrDiscoveryService
     private JObject? FetchJellyseerrDetails(string username, PluginConfiguration config, string mediaType, int mediaId)
     {
         using HttpClient client = CreateClient(config);
+
         if (!string.IsNullOrWhiteSpace(username))
         {
             int? jellyseerrUserId = ResolveJellyseerrUserId(client, username);
@@ -477,9 +528,7 @@ public class JellyseerrDiscoveryService
             }
         }
 
-        string path = mediaType == "tv"
-            ? $"/api/v1/tv/{mediaId}"
-            : $"/api/v1/movie/{mediaId}";
+        string path = mediaType == "tv" ? $"/api/v1/tv/{mediaId}" : $"/api/v1/movie/{mediaId}";
 
         try
         {
@@ -490,11 +539,13 @@ public class JellyseerrDiscoveryService
             }
 
             string jsonRaw = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+
             return JObject.Parse(jsonRaw);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to fetch Seerr details for {MediaType}/{MediaId}", mediaType, mediaId);
+
             return null;
         }
     }
@@ -508,21 +559,31 @@ public class JellyseerrDiscoveryService
         }
 
         using HttpClient client = CreateClient(config);
+
         if (!string.IsNullOrWhiteSpace(username))
         {
             int? jellyseerrUserId = ResolveJellyseerrUserId(client, username);
             if (jellyseerrUserId != null)
             {
                 client.DefaultRequestHeaders.Add("X-Api-User", jellyseerrUserId.ToString());
+
                 if (path.Contains("/watchproviders/", StringComparison.Ordinal))
                 {
                     try
                     {
                         JObject main = JellyseerrProfileService.ReadMainAsync(client, jellyseerrUserId.Value).GetAwaiter().GetResult();
                         JObject defaults = JellyseerrProfileService.ReadDefaultsAsync(client).GetAwaiter().GetResult();
-                        path = path[..path.IndexOf('?')] + "?watchRegion=" + Uri.EscapeDataString(JellyseerrProfileService.StreamingRegion(main, config, defaults));
+                        path =
+                            path[..path.IndexOf('?')]
+                            + "?watchRegion="
+                            + Uri.EscapeDataString(JellyseerrProfileService.StreamingRegion(main, config, defaults));
                     }
-                    catch (Exception ex) { _logger.LogWarning(ex, "SeerrFin • failed to load personal streaming region"); return new JArray(); }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "SeerrFin • failed to load personal streaming region");
+
+                        return new JArray();
+                    }
                 }
             }
         }
@@ -533,11 +594,13 @@ public class JellyseerrDiscoveryService
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("SeerrFin • Seerr request failed for {Path} with status {StatusCode}", path, response.StatusCode);
+
                 return new JArray();
             }
 
             string jsonRaw = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
             JToken? token = JToken.Parse(jsonRaw);
+
             // Endpoints return either a bare array or { results: [...] }
             return token switch
             {
@@ -549,6 +612,7 @@ public class JellyseerrDiscoveryService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "SeerrFin • failed to fetch Seerr array from {Path}", path);
+
             return new JArray();
         }
     }
@@ -571,12 +635,12 @@ public class JellyseerrDiscoveryService
         }
 
         string? language = item.Value<string>("originalLanguage");
-        if (filterOptions.ApplyLanguageFilter &&
-            !string.IsNullOrEmpty(config.JellyseerrPreferredLanguages) &&
-            !string.IsNullOrEmpty(language) &&
-            !config.JellyseerrPreferredLanguages.Split(',')
-                .Select(x => x.Trim())
-                .Contains(language, StringComparer.OrdinalIgnoreCase))
+        if (
+            filterOptions.ApplyLanguageFilter
+            && !string.IsNullOrEmpty(config.JellyseerrPreferredLanguages)
+            && !string.IsNullOrEmpty(language)
+            && !config.JellyseerrPreferredLanguages.Split(',').Select(x => x.Trim()).Contains(language, StringComparer.OrdinalIgnoreCase)
+        )
         {
             return null;
         }
@@ -592,9 +656,7 @@ public class JellyseerrDiscoveryService
             return null;
         }
 
-        string dateTimeString = item.Value<string>("firstAirDate")
-                                ?? item.Value<string>("releaseDate")
-                                ?? "1970-01-01";
+        string dateTimeString = item.Value<string>("firstAirDate") ?? item.Value<string>("releaseDate") ?? "1970-01-01";
         if (string.IsNullOrWhiteSpace(dateTimeString))
         {
             dateTimeString = "1970-01-01";
@@ -604,10 +666,7 @@ public class JellyseerrDiscoveryService
         string posterSize = string.IsNullOrWhiteSpace(tmdb.PosterImageSize) ? "w600_and_h900_bestv2" : tmdb.PosterImageSize;
         string posterUrl = string.IsNullOrEmpty(posterPath)
             ? string.Empty
-            : ImageCacheHelper.GetCachedImageUrl(
-                _imageCacheService,
-                $"https://image.tmdb.org/t/p/{posterSize}{posterPath}",
-                _logger);
+            : ImageCacheHelper.GetCachedImageUrl(_imageCacheService, $"https://image.tmdb.org/t/p/{posterSize}{posterPath}", _logger);
 
         string backdropPath = item.Value<string>("backdropPath") ?? item.Value<string>("backdrop_path") ?? string.Empty;
         string backdropSize = string.IsNullOrWhiteSpace(tmdb.BackdropImageSize) ? "w780" : tmdb.BackdropImageSize;
@@ -642,6 +701,7 @@ public class JellyseerrDiscoveryService
     {
         HttpClient client = new() { BaseAddress = new Uri(config.JellyseerrUrl!) };
         client.DefaultRequestHeaders.Add("X-Api-Key", config.JellyseerrApiKey);
+
         return client;
     }
 
@@ -650,8 +710,9 @@ public class JellyseerrDiscoveryService
     {
         HttpResponseMessage usersResponse = client.GetAsync($"/api/v1/user?q={Uri.EscapeDataString(username)}").GetAwaiter().GetResult();
         string userResponseRaw = usersResponse.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-        return JObject.Parse(userResponseRaw).Value<JArray>("results")?
-            .OfType<JObject>()
+
+        return JObject.Parse(userResponseRaw).Value<JArray>("results")
+            ?.OfType<JObject>()
             .FirstOrDefault(x => string.Equals(x.Value<string>("jellyfinUsername"), username, StringComparison.OrdinalIgnoreCase))
             ?.Value<int>("id");
     }
@@ -659,27 +720,30 @@ public class JellyseerrDiscoveryService
     private static int? GetMediaStatus(JObject item)
     {
         JToken? status = item.Value<JObject>("mediaInfo")?["status"];
+
         return status?.Type == JTokenType.Integer ? status.Value<int>() : null;
     }
 
-    private static bool IsAvailableInLibrary(JObject item) =>
-        GetMediaStatus(item) is 4 or 5; // Partially available / Available
+    private static bool IsAvailableInLibrary(JObject item) => GetMediaStatus(item) is 4 or 5; // Partially available / Available
 
     private static bool ShouldApplyReleaseTypeFilter(string? mediaTypeFilter, string jellyseerrPath, PluginConfiguration config) =>
-        string.Equals(mediaTypeFilter, "movie", StringComparison.OrdinalIgnoreCase) && GetReleaseTypes(config).Count > 0 && !jellyseerrPath.Contains("/upcoming", StringComparison.OrdinalIgnoreCase);
+        string.Equals(mediaTypeFilter, "movie", StringComparison.OrdinalIgnoreCase)
+        && GetReleaseTypes(config).Count > 0
+        && !jellyseerrPath.Contains("/upcoming", StringComparison.OrdinalIgnoreCase);
 
-    internal static List<int> GetReleaseTypes(PluginConfiguration config) =>
-        (config.DiscoverReleaseTypes ?? new List<int>())
-            .Where(type => type is >= 1 and <= 6)
-            .Distinct()
-            .OrderBy(type => type)
-            .ToList();
+    internal static List<int> GetReleaseTypes(PluginConfiguration config) => (config.DiscoverReleaseTypes ?? new List<int>()).Where(type => type is >= 1 and <= 6).Distinct().OrderBy(type => type).ToList();
 
     private static string GetWatchRegion(PluginConfiguration config) => string.IsNullOrWhiteSpace(config.WatchRegion) ? "US" : config.WatchRegion.Trim();
 
     private static string GetDefaultFutureReleaseDate() => DateTime.UtcNow.AddDays((int)(365 * 1.5)).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
-    private static string BuildTmdbDiscoverUrl(string jellyseerrPath, PluginConfiguration config, int page, JObject preferences, JObject defaults)
+    private static string BuildTmdbDiscoverUrl(
+        string jellyseerrPath,
+        PluginConfiguration config,
+        int page,
+        JObject preferences,
+        JObject defaults
+    )
     {
         AdvancedDiscoverySettings discovery = AdvancedSettingsHelper.Resolve(config).Discovery;
         var query = new List<string>
@@ -693,16 +757,18 @@ public class JellyseerrDiscoveryService
         };
 
         AppendLanguageFilter(query, config);
-        string Effective(string key) => preferences.Value<string>(key) is { Length: > 0 } value ? value : defaults.Value<string>(key) ?? "";
+        string Effective(string key) => preferences.Value<string>(key)is { Length: > 0 } value ? value : defaults.Value<string>(key) ?? "";
         query.Add("language=" + Uri.EscapeDataString(Effective("locale")));
         string region = Effective("discoverRegion");
         if (region.Length > 0 && region != "all") query.Add("region=" + Uri.EscapeDataString(region));
+
         string original = Effective("originalLanguage");
         if (original.Length > 0 && original != "all")
         {
             query.RemoveAll(x => x.StartsWith("with_original_language=", StringComparison.Ordinal));
             query.Add("with_original_language=" + Uri.EscapeDataString(original));
         }
+
         AppendPathParams(query, jellyseerrPath, GetWatchRegion(config));
 
         if (!query.Exists(static part => part.StartsWith("sort_by=", StringComparison.Ordinal)))
@@ -746,6 +812,7 @@ public class JellyseerrDiscoveryService
 
             string key = Uri.UnescapeDataString(parts[0]);
             string value = Uri.EscapeDataString(Uri.UnescapeDataString(parts[1]));
+
             switch (key) // yes im elite i use switch case
             {
                 case "sortBy":
@@ -772,23 +839,35 @@ public class JellyseerrDiscoveryService
             }
         }
 
-        if (query.Exists(static part => part.StartsWith("with_watch_providers=", StringComparison.Ordinal))
-            && !query.Exists(static part => part.StartsWith("watch_region=", StringComparison.Ordinal)))
+        if (
+            query.Exists(static part => part.StartsWith("with_watch_providers=", StringComparison.Ordinal))
+            && !query.Exists(static part => part.StartsWith("watch_region=", StringComparison.Ordinal))
+        )
         {
             query.Add("watch_region=" + Uri.EscapeDataString(defaultWatchRegion));
         }
     }
 
-    private JObject? FetchTmdbTrendingMoviesJson(string apiKey, PluginConfiguration config, int page, Dictionary<int, bool> releaseTypeCache, string locale)
+    private JObject? FetchTmdbTrendingMoviesJson(
+        string apiKey,
+        PluginConfiguration config,
+        int page,
+        Dictionary<int, bool> releaseTypeCache,
+        string locale
+    )
     {
-        string url = "https://api.themoviedb.org/3/trending/movie/week?page="
-            + page.ToString(CultureInfo.InvariantCulture) + "&language=" + Uri.EscapeDataString(locale);
+        string url =
+            "https://api.themoviedb.org/3/trending/movie/week?page="
+            + page.ToString(CultureInfo.InvariantCulture)
+            + "&language="
+            + Uri.EscapeDataString(locale);
 
         using HttpRequestMessage request = CreateTmdbRequest(url, apiKey);
         using HttpResponseMessage response = new HttpClient().SendAsync(request).GetAwaiter().GetResult();
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("SeerrFin • TMDB trending request failed with status {StatusCode} for {Url}", (int)response.StatusCode, url);
+
             return null;
         }
 
@@ -824,6 +903,7 @@ public class JellyseerrDiscoveryService
         }
 
         bool matches = false;
+
         try
         {
             string url = "https://api.themoviedb.org/3/movie/" + movieId.ToString(CultureInfo.InvariantCulture) + "/release_dates";
@@ -842,6 +922,7 @@ public class JellyseerrDiscoveryService
         }
 
         cache[movieId] = matches;
+
         return matches;
     }
 
@@ -865,6 +946,7 @@ public class JellyseerrDiscoveryService
     private static JObject MapTmdbMovie(JObject movie)
     {
         int id = movie.Value<int>("id");
+
         return new JObject
         {
             ["id"] = id,
@@ -888,13 +970,14 @@ public class JellyseerrDiscoveryService
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("SeerrFin • TMDB discover request failed with status {StatusCode} for {Url}", (int)response.StatusCode, url);
+
             return null;
         }
 
         string jsonRaw = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
         JObject tmdb = JObject.Parse(jsonRaw);
         JArray results = new();
-        
+
         foreach (JObject movie in tmdb.Value<JArray>("results")?.OfType<JObject>() ?? [])
         {
             results.Add(MapTmdbMovie(movie));
@@ -916,10 +999,14 @@ public class JellyseerrDiscoveryService
         if (apiKey.Split('.').Length == 3)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+
             return request;
         }
 
-        request.RequestUri = new Uri(url + (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "api_key=" + Uri.EscapeDataString(apiKey));
+        request.RequestUri = new Uri(
+            url + (url.Contains('?', StringComparison.Ordinal) ? "&" : "?") + "api_key=" + Uri.EscapeDataString(apiKey)
+        );
+
         return request;
     }
 
@@ -936,6 +1023,7 @@ public class JellyseerrDiscoveryService
     private static DiscoverItemFilterOptions ResolveSearchMapping()
     {
         AdvancedDiscoverySettings discovery = AdvancedSettingsHelper.Resolve(SeerrFinPlugin.Instance.Configuration).Discovery;
+
         return new DiscoverItemFilterOptions
         {
             ApplyLanguageFilter = false,
@@ -965,8 +1053,7 @@ public class JellyseerrDiscoveryService
         };
     }
 
-    internal BaseItemDto? MapFilteredDiscoverItem(JObject item, bool hasLanguage) => MapDiscoverItem(item,
-        hasLanguage ? ResolveSearchMapping() : ResolveMapping(SeerrFinPlugin.Instance.Configuration, false));
+    internal BaseItemDto? MapFilteredDiscoverItem(JObject item, bool hasLanguage) => MapDiscoverItem(item, hasLanguage ? ResolveSearchMapping() : ResolveMapping(SeerrFinPlugin.Instance.Configuration, false));
 
     private sealed class DiscoverItemFilterOptions
     {
@@ -977,11 +1064,11 @@ public class JellyseerrDiscoveryService
         public bool HideAvailableInLibrary { get; init; }
     }
 
-    private static QueryResult<BaseItemDto> EmptyResult() => new()
-    {
-        Items = Array.Empty<BaseItemDto>(),
-        StartIndex = 0,
-        TotalRecordCount = 0
-    };
-
+    private static QueryResult<BaseItemDto> EmptyResult() =>
+        new()
+        {
+            Items = Array.Empty<BaseItemDto>(),
+            StartIndex = 0,
+            TotalRecordCount = 0
+        };
 }
